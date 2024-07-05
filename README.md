@@ -1,5 +1,21 @@
-Example project code: https://github.com/KinesteX/KinesteX-SDK-Flutter
+Demo project: https://github.com/KinesteX/KinesteX-SDK-Flutter
+
+# [KinesteX AI](https://kinestex.com)
+## INTEGRATE AI FITNESS & PHYSIO TRAINER IN YOUR APP IN MINUTES
+
+## Available Integration Options
+
+### Integration Options
+
+| **Integration Option**         | **Description**                                                                                                 | **Features**                                                                                                                                     | **Details**                                                                                                             |
+|--------------------------------|-----------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------|
+| **Complete User Experience**   | Leave it to us to recommend the best workout routines for your customers, handle motion tracking, and overall user interface. High level of customization based on your brand book for a seamless experience. | - Long-term lifestyle workout plans <br> - Specific body parts and full-body workouts <br> - Individual exercise challenges (e.g., 20 squat challenge) | [View Integration Options](https://www.figma.com/proto/XYEoV023iSFdhpw3w65zR1/Complete?page-id=0%3A1&node-id=0-1&viewport=793%2C330%2C0.1&t=d7VfZzKpLBsJAcP9-1&scaling=contain) |
+| **Custom User Experience**     | Integrate the camera component with motion tracking. Real-time feedback on all customer movements. Control the position, size, and placement of the camera component. | - Real-time feedback on customer movements <br> - Communication of every repeat and mistake <br> - Customizable camera component position, size, and placement | [View Details](https://www.figma.com/proto/JyPHuRKKbiQkwgiDTkGJgT/Camera-Component?page-id=0%3A1&node-id=1-4&viewport=925%2C409%2C0.22&t=3UccMcp1o3lKc0cP-1&scaling=contain) |
+
+---
 ## Configuration
+
+### Permissions
 
 #### AndroidManifest.xml
 
@@ -11,7 +27,6 @@ Add the following permissions for camera and microphone usage:
 <uses-permission android:name="android.permission.RECORD_AUDIO" />
 <uses-permission android:name="android.permission.INTERNET"/>
 <uses-permission android:name="android.permission.VIDEO_CAPTURE" />
-
 ```
 
 #### Info.plist
@@ -24,148 +39,244 @@ Add the following keys for camera and microphone usage:
 <key>NSMicrophoneUsageDescription</key>
 <string>Microphone access is required for video streaming.</string>
 ```
-Add the following dependencies to pubsec.yaml:
 
-```xml
-kinestex_sdk_flutter: ^@latest
+### Install libraries
+
+Add the following dependency to your `pubspec.yaml`:
+
+```yaml
+dependencies:
+  kinestex_sdk_flutter: ^@latest
 ```
 
-### Available categories to sort plans (param key is planC):
-
-| **Plan Category (key: planC)** | 
-| --- | 
-| **Strength** | 
-| **Cardio** |
-| **Rehabilitation** | 
-
-
-### Available categories and sub categories to sort workouts:
-
-| **Category (key: category)** |
-| --- | 
-| **Fitness** |
-| **Rehabilitation** | 
-
-## WebView Camera Access in Flutter with KinesteX AI
-
-This guide provides a detailed walkthrough of the Flutter code that integrates a web view with camera access and communicates with KinesteX.
+## Usage
 
 ### Initial Setup
 
-1. **Prerequisites**:
-    - Ensure you've added the necessary permissions in your `AndroidManifest.xml` and `Info.plist` for both Android and iOS respectively.
-    - Add the required dependencies in your `pubspec.yaml`.
+1. **Prerequisites**: Ensure you’ve added the necessary permissions in `AndroidManifest.xml` and `Info.plist`.
 
-2. **App Initialization**:
-    - Before Starting KinesteX, please initialize essential widgets.
-    - Then checks and request for camera permission. 
-    ```dart
-    void _checkCameraPermission() async {
-    if (await Permission.camera.request() != PermissionStatus.granted) {
-      _showCameraAccessDeniedAlert();
-       }
-    }
-   void _showCameraAccessDeniedAlert() {
-    showDialog(
-      context: context, // Now using the build context of the widget
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text("Camera Permission Denied"),
-          content: const Text(
-              "Camera access is required for this app to function properly."),
-          actions: <Widget>[
-            TextButton(
-              child: const Text("OK"),
-              onPressed: () {
-                Navigator.of(context).pop(); // Close the dialog
-              },
-            ),
-          ],
-        );
-      },
-    );
-   }
-    ```
+2. **Launching the View**: Initialize essential widgets, check, and request for camera permission before launching KinesteX.
 
-
-### Displaying KinesteX
-
-   ```dart
-      Widget _buildWebView() {
-      return KinesteXWebView(
-         apiKey: 'YOUR API KEY',
-         userId:  "YOUR USER ID",
-         workOutCategory: CustomWorkOutCategory(""), // Leave it empty if you want to not show workout categories
-         planCategory: WeightManagementPlanCategory(),
-         companyName: 'YOUR COMPANY NAME',
-         onLoadStop: () {},
-         onHandleMessage: _handleMessage,
-   );
-}
-   ```
-
-
-
-### Handling communication:
-
-We send HTTPS Post messages to inform you of the user's actions. You can handle the received messages through a callback function: 
 ```dart
-void _handleMessage(Map<String, dynamic> message) {
-  
-    switch (message['type']) {
-      case "kinestex_launched":
-        print("Successfully launched the app. @${message['data']}");
-        break;
-      case "workout_opened":
-        print("Workout opened. ${message['data']}");
-        break;
-      case "workout_started":
-        print("Workout started. ${message['data']}");
-        break;
-      case "plan_unlocked":
-        print("User unlocked plan. Data: ${message['data']}");
-        break;
-      case "finished_workout":
-        print("Workout finished. Data: ${message['data']}");
-        break;
-      case "error_occured":
-        print("There was an error: ${message['data']}");
-        break;
-      case "exercise_completed":
-        print("Exercise completed: ${message['data']}");
-        break;
-      case "exitApp":
-        // a user wishes to close KinesteX, so dismiss the KinesteX webview to your interface
-        if (mounted) {
-          setState(() {
-            showWebView = false;
-          });
-        }
-        print("User closed KinesteX window @$currentTime");
-        break;
-      default:
-        print("Received: ${message['type']} ${message['data']}");
-        break;
-    }
+void _checkCameraPermission() async {
+  if (await Permission.camera.request() != PermissionStatus.granted) {
+    _showCameraAccessDeniedAlert();
   }
+}
 
+void _showCameraAccessDeniedAlert() {
+  showDialog(
+    context: context, 
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: const Text("Camera Permission Denied"),
+        content: const Text("Camera access is required for this app to function properly."),
+        actions: <Widget>[
+          TextButton(
+            child: const Text("OK"),
+            onPressed: () {
+              Navigator.of(context).pop(); 
+            },
+          ),
+        ],
+      );
+    },
+  );
+}
 ```
 
-#### Function Breakdown:
+### Integration Options
 
-   **Switch Statement on Message Type**:
-   The core of the `handleMessage` function is a switch statement that checks the `type` property of the parsed message. Each case corresponds to a different type of action or event that occurred in KinesteX.
+| **functions**             | **Description**                                                 |
+|---------------------------|-----------------------------------------------------------------|
+| **createMainView**        | Integration of our Complete UX                                  |
+| **createPlanView**        | Integration of Individual Plan Component                        |
+| **createWorkoutView**     | Integration of Individual Workout Component                     |
+| **createChallengeView**   | Integration of Individual Exercise in a challenge form          |
+| **createCameraComponent** | Integration of our camera component with pose-analysis and feedback |
 
-    - `kinestex_launched`: Logs when KinesteX is successfully launched.
-    - `workout_opened`: Logs when a workout is opened.
-    - `workout_started`: Logs when a workout is started.
-    - `plan_unlocked`: Logs when a user unlocks a plan.
-    - `finished_workout`: Logs when a workout is finished.
-    - `error_occured`: Logs when there's an error.
-    - `exercise_completed`: Logs when an exercise is completed.
-    - `exitApp`: Logs when the KinesteX window is closed and sets the `showWebview` to false, which will hide the WebView.
-    - `default`: For all other message types, it just logs the received type and data.
+### Available Categories to Sort Plans
 
+| **Plan Category (key: planCategory)** |
+|---------------------------------------|
+| **Strength**                          |
+| **Cardio**                            |
+| **Weight Management**                 |
+| **Rehabilitation**                    |
 
-### Contact
-Please contact help@kinestex.com if you have any questions
+### Example Integration
+
+1. Create a reference to `KinesteXAIFramework` component:
+
+```dart
+ValueNotifier<bool> showKinesteX = ValueNotifier<bool>(false);
+ValueNotifier<int> reps = ValueNotifier<int>(0);
+ValueNotifier<String> mistake = ValueNotifier<String>("--");
+ValueNotifier<String?> updateExercise = ValueNotifier<String?>(null);
+
+void handleWebViewMessage(WebViewMessage message) {
+  switch (message.type) {
+    case 'exit_kinestex':
+      // hide KinesteX view
+      showKinesteX.value = false;
+      break;
+    // Handle all other cases as needed
+    default:
+      log('Other message: ${message.data}');
+  }
+}
+```
+
+2. Display KinesteX with Main Integration Option:
+
+```dart
+KinesteXAIFramework.createMainView(
+  apiKey: 'YOUR API KEY',
+  companyName: 'YOUR COMPANY',
+  userId: 'YOUR USER ID',
+  planCategory: PlanCategory.Cardio, // pass the plan category
+  isShowKinesTex: showKinesteX,
+  isLoading: ValueNotifier<bool>(false),
+  onMessageReceived: handleWebViewMessage,
+);
+```
+
+### Examples for Each Integration Option
+
+**Individual Plan**
+
+```dart
+KinesteXAIFramework.createPlanView(
+  apiKey: 'YOUR API KEY',
+  companyName: 'YOUR COMPANY',
+  userId: 'YOUR USER ID',
+  planName: 'Circuit Training', // pass the name of the plan
+  isShowKinesTex: showKinesteX,
+  isLoading: ValueNotifier<bool>(false),
+  onMessageReceived: handleWebViewMessage,
+);
+```
+
+**Individual Workout**
+
+```dart
+KinesteXAIFramework.createWorkoutView(
+  apiKey: 'YOUR API KEY',
+  companyName: 'YOUR COMPANY',
+  userId: 'YOUR USER ID',
+  workoutName: 'Circuit Training', // pass the name of the workout
+  isShowKinesTex: showKinesteX,
+  isLoading: ValueNotifier<bool>(false),
+  onMessageReceived: handleWebViewMessage,
+);
+```
+
+**Challenge Component**
+
+1. Change `postData`:
+
+```dart
+const postData = {
+  'key': apiKey,
+  'userId': 'YOUR USER ID',
+  'company': 'YOUR COMPANY NAME',
+  'exercise': 'Squats',
+  'countdown': 100,
+};
+```
+
+2. Change integration option in KinesteXSDK:
+
+```dart
+KinesteXAIFramework.createChallengeView(
+  apiKey: 'YOUR API KEY',
+  companyName: 'YOUR COMPANY',
+  userId: 'YOUR USER ID',
+  exercise: 'Squats', // pass the name of the challenge exercise
+  countdown: 100, // duration of the challenge in seconds
+  isShowKinesTex: showKinesteX,
+  isLoading: ValueNotifier<bool>(false),
+  onMessageReceived: handleWebViewMessage,
+);
+```
+
+**Camera Component**
+
+1. Change `postData`:
+
+```dart
+const postData = {
+  'key': apiKey,
+  'userId': 'YOUR USER ID',
+  'company': 'YOUR COMPANY NAME',
+  'currentExercise': 'Squats',
+  'exercises': ['Squats', 'Jumping Jack'],
+};
+```
+
+2. Changing current exercise:
+
+```dart
+void changeExercise() {
+  updateExercise.value = 'Jumping Jack';
+}
+```
+
+3. Displaying KinesteXSDK:
+
+```dart
+KinesteXAIFramework.createCameraComponent(
+  apiKey: 'YOUR API KEY',
+  companyName: 'YOUR COMPANY',
+  userId: 'YOUR USER ID',
+  exercises: ['Squats', 'Jumping Jack'],
+  currentExercise: 'Squats',
+  isShowKinesTex: showKinesteX,
+  isLoading: ValueNotifier<bool>(false),
+  onMessageReceived: handleWebViewMessage,
+  updatedExercise: updateExercise.value,
+);
+```
+
+4. Handle message for reps and mistakes a person has done:
+
+```dart
+void handleWebViewMessage(WebViewMessage message) {
+  switch (message.type) {
+    case 'reps':
+      reps.value = message.data['value'] ?? 0;
+      break;
+    case 'mistake':
+      mistake.value = message.data['value'] ?? '--';
+      break;
+    default:
+      log('Other message: ${message.data}');
+  }
+}
+```
+
+## Data Points
+
+The KinesteX SDK provides various data points that are returned through the message callback. Here are the available data types:
+
+| Type                       | Data                                                                                   | Description                                                                                               |
+|----------------------------|----------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------|
+| `kinestex_launched`        | `dd mm yyyy hours:minutes:seconds`                                                      | When a user has launched KinesteX                                                                          |
+| `exit_kinestex`            | `date: dd mm yyyy hours:minutes:seconds`, `time_spent: number`                          | Logs when a user clicks the exit button and the total time spent                                           |
+| `plan_unlocked`            | `title: String, date: date and time`                                                    | Logs when a workout plan is unlocked by a user                                                            |
+| `workout_opened`           | `title: String, date: date and time`                                                    | Logs when a workout is opened by a user                                                                   |
+| `workout_started`          | `title: String, date: date and time`                                                    | Logs when a workout is started by a user                                                                  |
+| `exercise_completed`       | `time_spent: number`, `repeats: number`, `calories: number`, `exercise: string`, `mistakes: [string: number]` | Logs each time a user finishes an exercise                                                                 |
+| `total_active_seconds`     | `number`                                                                                | Logs every 5 seconds, counting the active seconds a user has spent working out                            |
+| `left_camera_frame`        | `number`                                                                                | Indicates that a user has left the camera frame                                                           |
+| `returned_camera_frame`    | `number`                                                                                | Indicates that a user has returned to the camera frame                                                    |
+| `workout_overview`         | `workout: string`, `total_time_spent: number`, `total_repeats: number`, `total_calories: number`, `percentage_completed: number`, `total_mistakes: number` | Logs a complete summary of the workout                                                                    |
+| `exercise_overview`        | `[exercise_completed]`                                                                 | Returns a log of all exercises and their data                                                             |
+| `workout_completed`        | `workout: string`, `date: dd mm yyyy hours:minutes:seconds`                             | Logs when a user finishes the workout and exits the workout overview                                      |
+| `active_days` (Coming soon)| `number`                                                                                | Represents the number of days a user has been opening KinesteX                                             |
+| `total_workouts` (Coming soon)| `number`                                                                            | Represents the number of workouts a user has done since starting to use KinesteX                          |
+| `workout_efficiency` (Coming soon)| `number`                                                                        | Represents the level of intensity with which a person has completed the workout                           |
+## Contact
+
+If you have any questions, contact: [support@kinestex.com](mailto:support@kinestex.com)
+
