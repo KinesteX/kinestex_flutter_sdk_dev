@@ -1,9 +1,13 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
-import 'kinestex_sdk.dart';
+
+import 'models/kinestex_view_state.dart';
+import 'models/web_view_message.dart';
+
 
 class GenericWebView extends StatefulWidget {
   final String apiKey;
@@ -40,7 +44,7 @@ class _GenericWebViewState extends State<GenericWebView> {
 
   @override
   void initState() {
-    log("Initialized - -------------  >  ${widget.updatedExercise}");
+
     super.initState();
   }
 
@@ -73,43 +77,53 @@ class _GenericWebViewState extends State<GenericWebView> {
             children: [
               InAppWebView(
                 initialUrlRequest: URLRequest(url: WebUri(widget.url)),
-                initialOptions: InAppWebViewGroupOptions(
-                  crossPlatform: InAppWebViewOptions(
-                    javaScriptEnabled: true,
-                    mediaPlaybackRequiresUserGesture: false, // Disable autoplay
+                initialSettings: InAppWebViewSettings(
 
-                  ),
+                  javaScriptEnabled: true,
+                  allowsAirPlayForMediaPlayback: true,
+                  allowsInlineMediaPlayback: true,
+                  allowsBackForwardNavigationGestures: true,
+                  mediaPlaybackRequiresUserGesture: false,
 
-                  ios: IOSInAppWebViewOptions(
-                    allowsInlineMediaPlayback: true, // Allow inline media playback
-                    allowsAirPlayForMediaPlayback: true
-                  ),
+                  verticalScrollBarEnabled: false,
+                  horizontalScrollBarEnabled: false,
+
+
                 ),
+
                 onWebViewCreated: (InAppWebViewController controller) {
                   _controller = controller;
                   webViewState.setWebViewController(controller);
+
 
                   controller.addJavaScriptHandler(
                     handlerName: 'messageHandler',
                     callback: (args) {
                       log('- - - - - Received - - - -  >>>>   ${args} ');
-                      final Map<String, dynamic> data = jsonDecode(args[0]);
-                      final WebViewMessage webViewMessage =
-                      WebViewMessage.fromJson(data);
-                      widget.onMessageReceived(webViewMessage);
+                      if (args.isNotEmpty) {
+                        final Map<String, dynamic> data = jsonDecode(args[0]);
+                        final WebViewMessage webViewMessage =
+                        WebViewMessage.fromJson(data);
+                        widget.onMessageReceived(webViewMessage);
+                      }
+
                     },
                   );
+
+
                 },
+
                 onLoadStop: (controller, url) async {
                   widget.isLoading.value = false;
+
                   _loadInitialData();
                 },
+
                 onLoadStart: (controller, url) {
                   widget.isLoading.value = true;
                 },
-                onConsoleMessage: (controller, consoleMessage) {
-                  print("WebViewMessage console:  " + consoleMessage.message);
-                },
+
+
                 onPermissionRequest: (controller, request) async {
                   return PermissionResponse(
                     resources: request.resources,
@@ -132,35 +146,63 @@ class _GenericWebViewState extends State<GenericWebView> {
     );
   }
 
-  void _loadInitialData() async {
-    final String script = '''
-    window.postMessage({
-      'key': '${widget.apiKey}',
-      'company': '${widget.companyName}',
-      'userId': '${widget.userId}',
-      'exercises': ${jsonEncode(widget.data['exercises'] ?? [])},
-      'currentExercise': '${widget.data['currentExercise'] ?? ''}',
-      'isHideHeaderMain': ${widget.isHideHeaderMain},
-      ${_mapToJson(widget.data)}
-    }, '${widget.url}');
-  ''';
 
-    if (_controller != null) {
-      await _controller!.evaluateJavascript(source: script);
-      await _controller!.evaluateJavascript(source: """
-                    window.addEventListener('message', (event) => {
-                      if (event.data === 'exitApp') {
-                        window.flutter_inappwebview.callHandler('exitApp');
-                      } else {
-                        window.flutter_inappwebview.callHandler('messageHandler', event.data);
-                      }
-                    });
-                  """);
+
+  void _loadInitialData() async {
+
+
+    String script = """
+
+    function sendMessage() {
+      const message = {
+        'key': '${widget.apiKey}',
+        'company': '${widget.companyName}',
+        'userId': '${widget.userId}',
+        'exercises': ${jsonEncode(widget.data['exercises'] ?? [])},
+        'currentExercise': '${widget.data['currentExercise'] ?? ''}',
+        'isHideHeaderMain': ${widget.isHideHeaderMain},
+        ${_mapToJson(widget.data)}
+      };
+     
+      window.postMessage(message, '${widget.url}');
+        window.addEventListener('message', (event) => {
+        
+        if (event.data) {
+           window.flutter_inappwebview.callHandler('messageHandler',event.data);
+         }
+                      
+        });
     }
 
-    print("Script: $script");
-  }
 
+  
+
+  function checkReadiness() {
+    if (document.readyState === 'complete') {
+      sendMessage();
+    } else {
+      document.addEventListener('DOMContentLoaded', sendMessage);
+    }
+    
+  }
+  
+    setTimeout(checkReadiness, 100); 
+    
+  """;
+
+
+    try {
+      if (_controller != null) {
+
+        await _controller!.evaluateJavascript(source: script);
+      }
+    } catch (e) {
+      log('Error sending message: $e');
+    }
+
+
+
+  }
   String _mapToJson(Map<String, dynamic> map) {
     return map.entries
         .where((e) => e.key != 'exercises' && e.key != 'currentExercise' && e.key != 'isHideHeaderMain')
