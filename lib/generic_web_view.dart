@@ -19,7 +19,6 @@ class GenericWebView extends StatefulWidget {
   final ValueNotifier<bool> isLoading;
   final ValueNotifier<bool> showKinesteX;
   final String? updatedExercise;
-  final bool isHideHeaderMain; // Add the new parameter
 
   const GenericWebView({
     super.key,
@@ -32,7 +31,6 @@ class GenericWebView extends StatefulWidget {
     required this.isLoading,
     required this.showKinesteX,
     this.updatedExercise,
-    this.isHideHeaderMain = false, // Set the default value to false
   });
 
   @override
@@ -150,6 +148,7 @@ class _GenericWebViewState extends State<GenericWebView> {
 
   void _loadInitialData() async {
 
+    // 'isHideHeaderMain': ${widget.isHideHeaderMain},
 
     String script = """
 
@@ -160,7 +159,6 @@ class _GenericWebViewState extends State<GenericWebView> {
         'userId': '${widget.userId}',
         'exercises': ${jsonEncode(widget.data['exercises'] ?? [])},
         'currentExercise': '${widget.data['currentExercise'] ?? ''}',
-        'isHideHeaderMain': ${widget.isHideHeaderMain},
         ${_mapToJson(widget.data)}
       };
      
@@ -193,7 +191,7 @@ class _GenericWebViewState extends State<GenericWebView> {
 
     try {
       if (_controller != null) {
-
+        log('sending message: $script');
         await _controller!.evaluateJavascript(source: script);
       }
     } catch (e) {
@@ -205,7 +203,7 @@ class _GenericWebViewState extends State<GenericWebView> {
   }
   String _mapToJson(Map<String, dynamic> map) {
     return map.entries
-        .where((e) => e.key != 'exercises' && e.key != 'currentExercise' && e.key != 'isHideHeaderMain')
+        .where((e) => e.key != 'exercises' && e.key != 'currentExercise')
         .map((e) => "'${e.key}': '${e.value}'")
         .join(', ');
   }

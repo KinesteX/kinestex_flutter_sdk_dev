@@ -10,10 +10,10 @@ class KinesteXAIFramework {
     required String userId,
     PlanCategory planCategory = PlanCategory.Cardio,
     UserDetails? user,
+    Map<String, dynamic>? data,
     required ValueNotifier<bool> isLoading,
-    required ValueNotifier<bool> isShowKinesTex,
-    required Function(WebViewMessage) onMessageReceived,
-    bool isHideHeaderMain = false, // Add the new parameter
+    required ValueNotifier<bool> isShowKinestex,
+    required Function(WebViewMessage) onMessageReceived
   }) {
     final validationError = _validateInput(
       apiKey: apiKey,
@@ -26,8 +26,9 @@ class KinesteXAIFramework {
       print("⚠️ Validation Error: $validationError");
       return Container();
     } else {
-      final data = <String, dynamic>{
+      final dataTotal = <String, dynamic>{
         'planC': planCategoryString(planCategory),
+
         if (user != null) ...{
           'age': user.age,
           'height': user.height,
@@ -35,18 +36,23 @@ class KinesteXAIFramework {
           'gender': genderString(user.gender),
           'lifestyle': lifestyleString(user.lifestyle),
         },
+
       };
+
+      if (data != null) {
+        dataTotal.addAll(data);
+      }
 
       return GenericWebView(
         apiKey: apiKey,
         companyName: companyName,
         userId: userId,
         url: "https://kinestex.vercel.app",
-        data: data,
+        data: dataTotal,
         isLoading: isLoading,
         onMessageReceived: onMessageReceived,
-        showKinesteX: isShowKinesTex,
-        isHideHeaderMain: isHideHeaderMain, // Pass the parameter
+        showKinesteX: isShowKinestex
+        // isHideHeaderMain: isHideHeaderMain, // Pass the parameter
       );
     }
   }
@@ -57,10 +63,10 @@ class KinesteXAIFramework {
     required String userId,
     required String planName,
     UserDetails? user,
+    Map<String, dynamic>? data,
     required ValueNotifier<bool> isLoading,
-    required ValueNotifier<bool> isShowKinesTex,
+    required ValueNotifier<bool> isShowKinestex,
     required Function(WebViewMessage) onMessageReceived,
-    bool isHideHeaderMain = false, // Add the new parameter
   }) {
     if (containsDisallowedCharacters(apiKey) ||
         containsDisallowedCharacters(companyName) ||
@@ -72,7 +78,7 @@ class KinesteXAIFramework {
     } else {
       final adjustedPlanName = planName.replaceAll(' ', '%20');
       final url = "https://kinestex.vercel.app/plan/$adjustedPlanName";
-      final data = <String, dynamic>{
+      final dataTotal = <String, dynamic>{
         if (user != null) ...{
           'age': user.age,
           'height': user.height,
@@ -82,16 +88,20 @@ class KinesteXAIFramework {
         },
       };
 
+      if (data != null) {
+        dataTotal.addAll(data);
+      }
+
       return GenericWebView(
         apiKey: apiKey,
         companyName: companyName,
-        showKinesteX: isShowKinesTex,
+        showKinesteX: isShowKinestex,
         userId: userId,
         url: url,
-        data: data,
+        data: dataTotal,
         isLoading: isLoading,
-        onMessageReceived: onMessageReceived,
-        isHideHeaderMain: isHideHeaderMain, // Pass the parameter
+        onMessageReceived: onMessageReceived
+        // isHideHeaderMain: isHideHeaderMain, // Pass the parameter
       );
     }
   }
@@ -102,10 +112,10 @@ class KinesteXAIFramework {
     required String userId,
     required String workoutName,
     UserDetails? user,
-    required ValueNotifier<bool> isShowKinesTex,
+    Map<String, dynamic>? data,
+    required ValueNotifier<bool> isShowKinestex,
     required ValueNotifier<bool> isLoading,
-    required Function(WebViewMessage) onMessageReceived,
-    bool isHideHeaderMain = false, // Add the new parameter
+    required Function(WebViewMessage) onMessageReceived
   }) {
     if (containsDisallowedCharacters(apiKey) ||
         containsDisallowedCharacters(companyName) ||
@@ -117,7 +127,7 @@ class KinesteXAIFramework {
     } else {
       final adjustedWorkoutName = workoutName.replaceAll(' ', '%20');
       final url = "https://kinestex.vercel.app/workout/$adjustedWorkoutName";
-      final data = <String, dynamic>{
+      final dataTotal = <String, dynamic>{
         if (user != null) ...{
           'age': user.age,
           'height': user.height,
@@ -127,16 +137,20 @@ class KinesteXAIFramework {
         },
       };
 
+      if (data != null) {
+        dataTotal.addAll(data);
+      }
+
       return GenericWebView(
         apiKey: apiKey,
         companyName: companyName,
-        showKinesteX: isShowKinesTex,
+        showKinesteX: isShowKinestex,
         userId: userId,
         url: url,
-        data: data,
+        data: dataTotal,
         isLoading: isLoading,
-        onMessageReceived: onMessageReceived,
-        isHideHeaderMain: isHideHeaderMain, // Pass the parameter
+        onMessageReceived: onMessageReceived
+        // isHideHeaderMain: isHideHeaderMain, // Pass the parameter
       );
     }
   }
@@ -148,10 +162,10 @@ class KinesteXAIFramework {
     String exercise = "Squats",
     required int countdown,
     UserDetails? user,
-    required ValueNotifier<bool> isShowKinesTex,
+    Map<String, dynamic>? data,
+    required ValueNotifier<bool> isShowKinestex,
     required ValueNotifier<bool> isLoading,
-    required Function(WebViewMessage) onMessageReceived,
-    bool isHideHeaderMain = false, // Add the new parameter
+    required Function(WebViewMessage) onMessageReceived
   }) {
     if (containsDisallowedCharacters(apiKey) ||
         containsDisallowedCharacters(companyName) ||
@@ -161,7 +175,7 @@ class KinesteXAIFramework {
           "⚠️ Validation Error: apiKey, companyName, userId, or exercise contains disallowed characters");
       return Container();
     } else {
-      final data = <String, dynamic>{
+      final dataTotal = <String, dynamic>{
         'exercise': exercise,
         'countdown': countdown,
         if (user != null) ...{
@@ -173,16 +187,20 @@ class KinesteXAIFramework {
         },
       };
 
+      if (data != null) {
+        dataTotal.addAll(data);
+      }
+
       return GenericWebView(
         apiKey: apiKey,
-        showKinesteX: isShowKinesTex,
+        showKinesteX: isShowKinestex,
         companyName: companyName,
         userId: userId,
         url: "https://kinestex-challenge.vercel.app",
-        data: data,
+        data: dataTotal,
         isLoading: isLoading,
-        onMessageReceived: onMessageReceived,
-        isHideHeaderMain: isHideHeaderMain, // Pass the parameter
+        onMessageReceived: onMessageReceived
+        // isHideHeaderMain: isHideHeaderMain, // Pass the parameter
       );
     }
   }
@@ -194,11 +212,11 @@ class KinesteXAIFramework {
     required List<String> exercises,
     required String currentExercise,
     UserDetails? user,
+    Map<String, dynamic>? data,
     required ValueNotifier<bool> isLoading,
-    required ValueNotifier<bool> isShowKinesTex,
+    required ValueNotifier<bool> isShowKinestex,
     required Function(WebViewMessage) onMessageReceived,
     String? updatedExercise,
-    bool isHideHeaderMain = false, // Add the new parameter
   }) {
     for (final exercise in exercises) {
       if (containsDisallowedCharacters(exercise)) {
@@ -215,7 +233,7 @@ class KinesteXAIFramework {
           "⚠️ Validation Error: apiKey, companyName, userId, or currentExercise contains disallowed characters");
       return Container();
     } else {
-      final data = <String, dynamic>{
+      final dataTotal = <String, dynamic>{
         'exercises': exercises,
         'currentExercise': currentExercise,
         if (user != null) ...{
@@ -227,18 +245,22 @@ class KinesteXAIFramework {
         },
       };
 
+      if (data != null) {
+        dataTotal.addAll(data);
+      }
+
       log("Updated - ---AIFrameWork----------  >  ${updatedExercise}");
       return GenericWebView(
         apiKey: apiKey,
         companyName: companyName,
-        showKinesteX: isShowKinesTex,
+        showKinesteX: isShowKinestex,
         userId: userId,
         url: "https://kinestex-camera-ai.vercel.app",
-        data: data,
+        data: dataTotal,
         isLoading: isLoading,
         onMessageReceived: onMessageReceived,
-        updatedExercise: updatedExercise,
-        isHideHeaderMain: isHideHeaderMain, // Pass the parameter
+        updatedExercise: updatedExercise
+        // isHideHeaderMain: isHideHeaderMain, // Pass the parameter
       );
     }
   }
