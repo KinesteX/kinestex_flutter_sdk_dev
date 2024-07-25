@@ -148,8 +148,6 @@ class _GenericWebViewState extends State<GenericWebView> {
 
   void _loadInitialData() async {
 
-    // 'isHideHeaderMain': ${widget.isHideHeaderMain},
-
     String script = """
 
     function sendMessage() {
@@ -191,7 +189,7 @@ class _GenericWebViewState extends State<GenericWebView> {
 
     try {
       if (_controller != null) {
-        log('sending message: $script');
+       // log('sending message: $script');
         await _controller!.evaluateJavascript(source: script);
       }
     } catch (e) {
