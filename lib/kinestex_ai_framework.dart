@@ -10,7 +10,7 @@ class KinesteXAIFramework {
     required String userId,
     PlanCategory planCategory = PlanCategory.Cardio,
     UserDetails? user,
-    Map<String, dynamic>? data,
+    Map<String, dynamic>? customParams,
     required ValueNotifier<bool> isLoading,
     required ValueNotifier<bool> isShowKinestex,
     required Function(WebViewMessage) onMessageReceived
@@ -26,7 +26,7 @@ class KinesteXAIFramework {
       print("⚠️ Validation Error: $validationError");
       return Container();
     } else {
-      final dataTotal = <String, dynamic>{
+      final data = <String, dynamic>{
         'planC': planCategoryString(planCategory),
 
         if (user != null) ...{
@@ -39,16 +39,14 @@ class KinesteXAIFramework {
 
       };
 
-      if (data != null) {
-        dataTotal.addAll(data);
-      }
+      validateCustomParams(customParams, data);
 
       return GenericWebView(
         apiKey: apiKey,
         companyName: companyName,
         userId: userId,
         url: "https://kinestex.vercel.app",
-        data: dataTotal,
+        data: data,
         isLoading: isLoading,
         onMessageReceived: onMessageReceived,
         showKinesteX: isShowKinestex
@@ -63,7 +61,7 @@ class KinesteXAIFramework {
     required String userId,
     required String planName,
     UserDetails? user,
-    Map<String, dynamic>? data,
+    Map<String, dynamic>? customParams,
     required ValueNotifier<bool> isLoading,
     required ValueNotifier<bool> isShowKinestex,
     required Function(WebViewMessage) onMessageReceived,
@@ -78,7 +76,7 @@ class KinesteXAIFramework {
     } else {
       final adjustedPlanName = planName.replaceAll(' ', '%20');
       final url = "https://kinestex.vercel.app/plan/$adjustedPlanName";
-      final dataTotal = <String, dynamic>{
+      final data = <String, dynamic>{
         if (user != null) ...{
           'age': user.age,
           'height': user.height,
@@ -88,9 +86,7 @@ class KinesteXAIFramework {
         },
       };
 
-      if (data != null) {
-        dataTotal.addAll(data);
-      }
+      validateCustomParams(customParams, data);
 
       return GenericWebView(
         apiKey: apiKey,
@@ -98,7 +94,7 @@ class KinesteXAIFramework {
         showKinesteX: isShowKinestex,
         userId: userId,
         url: url,
-        data: dataTotal,
+        data: data,
         isLoading: isLoading,
         onMessageReceived: onMessageReceived
         // isHideHeaderMain: isHideHeaderMain, // Pass the parameter
@@ -112,7 +108,7 @@ class KinesteXAIFramework {
     required String userId,
     required String workoutName,
     UserDetails? user,
-    Map<String, dynamic>? data,
+    Map<String, dynamic>? customParams,
     required ValueNotifier<bool> isShowKinestex,
     required ValueNotifier<bool> isLoading,
     required Function(WebViewMessage) onMessageReceived
@@ -127,7 +123,7 @@ class KinesteXAIFramework {
     } else {
       final adjustedWorkoutName = workoutName.replaceAll(' ', '%20');
       final url = "https://kinestex.vercel.app/workout/$adjustedWorkoutName";
-      final dataTotal = <String, dynamic>{
+      final data = <String, dynamic>{
         if (user != null) ...{
           'age': user.age,
           'height': user.height,
@@ -137,9 +133,7 @@ class KinesteXAIFramework {
         },
       };
 
-      if (data != null) {
-        dataTotal.addAll(data);
-      }
+      validateCustomParams(customParams, data);
 
       return GenericWebView(
         apiKey: apiKey,
@@ -147,7 +141,7 @@ class KinesteXAIFramework {
         showKinesteX: isShowKinestex,
         userId: userId,
         url: url,
-        data: dataTotal,
+        data: data,
         isLoading: isLoading,
         onMessageReceived: onMessageReceived
         // isHideHeaderMain: isHideHeaderMain, // Pass the parameter
@@ -162,7 +156,7 @@ class KinesteXAIFramework {
     String exercise = "Squats",
     required int countdown,
     UserDetails? user,
-    Map<String, dynamic>? data,
+    Map<String, dynamic>? customParams,
     required ValueNotifier<bool> isShowKinestex,
     required ValueNotifier<bool> isLoading,
     required Function(WebViewMessage) onMessageReceived
@@ -175,7 +169,7 @@ class KinesteXAIFramework {
           "⚠️ Validation Error: apiKey, companyName, userId, or exercise contains disallowed characters");
       return Container();
     } else {
-      final dataTotal = <String, dynamic>{
+      final data = <String, dynamic>{
         'exercise': exercise,
         'countdown': countdown,
         if (user != null) ...{
@@ -187,9 +181,7 @@ class KinesteXAIFramework {
         },
       };
 
-      if (data != null) {
-        dataTotal.addAll(data);
-      }
+      validateCustomParams(customParams, data);
 
       return GenericWebView(
         apiKey: apiKey,
@@ -197,7 +189,7 @@ class KinesteXAIFramework {
         companyName: companyName,
         userId: userId,
         url: "https://kinestex-challenge.vercel.app",
-        data: dataTotal,
+        data: data,
         isLoading: isLoading,
         onMessageReceived: onMessageReceived
         // isHideHeaderMain: isHideHeaderMain, // Pass the parameter
@@ -212,7 +204,7 @@ class KinesteXAIFramework {
     required List<String> exercises,
     required String currentExercise,
     UserDetails? user,
-    Map<String, dynamic>? data,
+    Map<String, dynamic>? customParams,
     required ValueNotifier<bool> isLoading,
     required ValueNotifier<bool> isShowKinestex,
     required Function(WebViewMessage) onMessageReceived,
@@ -233,7 +225,7 @@ class KinesteXAIFramework {
           "⚠️ Validation Error: apiKey, companyName, userId, or currentExercise contains disallowed characters");
       return Container();
     } else {
-      final dataTotal = <String, dynamic>{
+      final data = <String, dynamic>{
         'exercises': exercises,
         'currentExercise': currentExercise,
         if (user != null) ...{
@@ -245,9 +237,7 @@ class KinesteXAIFramework {
         },
       };
 
-      if (data != null) {
-        dataTotal.addAll(data);
-      }
+      validateCustomParams(customParams, data);
 
       log("Updated - ---AIFrameWork----------  >  ${updatedExercise}");
       return GenericWebView(
@@ -256,12 +246,26 @@ class KinesteXAIFramework {
         showKinesteX: isShowKinestex,
         userId: userId,
         url: "https://kinestex-camera-ai.vercel.app",
-        data: dataTotal,
+        data: data,
         isLoading: isLoading,
         onMessageReceived: onMessageReceived,
         updatedExercise: updatedExercise
         // isHideHeaderMain: isHideHeaderMain, // Pass the parameter
       );
+    }
+  }
+
+  static void validateCustomParams(
+      Map<String, dynamic>? customParams, Map<String, dynamic> data) {
+    if (customParams != null) {
+      customParams.forEach((key, value) {
+        if (containsDisallowedCharacters(key) ||
+            (value is String && containsDisallowedCharacters(value))) {
+          print('⚠️ Validation Error: Custom parameter key or value contains disallowed characters');
+        } else {
+          data[key] = value;
+        }
+      });
     }
   }
 
