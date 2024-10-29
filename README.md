@@ -1,16 +1,14 @@
-Demo project: https://github.com/KinesteX/KinesteX-SDK-Flutter
-
-# [KinesteX AI](https://kinestex.com)
-## INTEGRATE AI FITNESS & PHYSIO TRAINER IN YOUR APP IN MINUTES
+# [Precise Motion Tracking and Analysis SDK](https://kinestex.com)
+## Stay Ahead with KinesteX AI Motion Tracking.
 
 ## Available Integration Options
 
 ### Integration Options
 
-| **Integration Option**         | **Description**                                                                                                 | **Features**                                                                                                                                     | **Details**                                                                                                             |
-|--------------------------------|-----------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------|
-| **Complete User Experience**   | Leave it to us to recommend the best workout routines for your customers, handle motion tracking, and overall user interface. High level of customization based on your brand book for a seamless experience. | - Long-term lifestyle workout plans <br> - Specific body parts and full-body workouts <br> - Individual exercise challenges (e.g., 20 squat challenge) | [View Integration Options](https://www.figma.com/proto/XYEoV023iSFdhpw3w65zR1/Complete?page-id=0%3A1&node-id=0-1&viewport=793%2C330%2C0.1&t=d7VfZzKpLBsJAcP9-1&scaling=contain) |
-| **Custom User Experience**     | Integrate the camera component with motion tracking. Real-time feedback on all customer movements. Control the position, size, and placement of the camera component. | - Real-time feedback on customer movements <br> - Communication of every repeat and mistake <br> - Customizable camera component position, size, and placement | [View Details](https://www.figma.com/proto/JyPHuRKKbiQkwgiDTkGJgT/Camera-Component?page-id=0%3A1&node-id=1-4&viewport=925%2C409%2C0.22&t=3UccMcp1o3lKc0cP-1&scaling=contain) |
+| **Integration Option**         | **Description**                                                                                                 | **Features**                                                                                                                                                                          | **Details**                                                                                                             |
+|--------------------------------|-----------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------|
+| **Complete User Experience**   | Leave it to us to recommend the best workout routines for your customers, handle motion tracking, and overall user interface. High level of customization based on your brand book for a seamless experience. | - Long-term lifestyle workout plans <br> - Specific body parts and full-body workouts <br> - Individual exercise challenges (e.g., 20 squat challenge) <br> - Gamified AI Experiences | [View Integration Options](https://www.figma.com/proto/XYEoV023iSFdhpw3w65zR1/Complete?page-id=0%3A1&node-id=0-1&viewport=793%2C330%2C0.1&t=d7VfZzKpLBsJAcP9-1&scaling=contain) |
+| **Custom User Experience**     | Integrate the camera component with motion tracking. Real-time feedback on all customer movements. Control the position, size, and placement of the camera component. | - Real-time feedback on customer movements <br> - Communication of every repeat and mistake <br> - Customizable camera component position, size, and placement                        | [View Details](https://www.figma.com/proto/JyPHuRKKbiQkwgiDTkGJgT/Camera-Component?page-id=0%3A1&node-id=1-4&viewport=925%2C409%2C0.22&t=3UccMcp1o3lKc0cP-1&scaling=contain) |
 
 ---
 ## Configuration
@@ -24,9 +22,8 @@ Add the following permissions for camera and microphone usage:
 ```xml
 <!-- Add this line inside the <manifest> tag -->
 <uses-permission android:name="android.permission.CAMERA" />
-<uses-permission android:name="android.permission.RECORD_AUDIO" />
 <uses-permission android:name="android.permission.INTERNET"/>
-<uses-permission android:name="android.permission.VIDEO_CAPTURE" />
+<uses-feature android:name="android.hardware.camera" android:required="false" />
 ```
 
 #### Info.plist
@@ -35,9 +32,7 @@ Add the following keys for camera and microphone usage:
 
 ```xml
 <key>NSCameraUsageDescription</key>
-<string>Camera access is required for video streaming.</string>
-<key>NSMicrophoneUsageDescription</key>
-<string>Microphone access is required for video streaming.</string>
+<string>Please grant access to camera to start AI Workout</string>
 ```
 
 ### Install libraries
@@ -46,7 +41,8 @@ Add the following dependency to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  kinestex_sdk_flutter: ^@latest
+   kinestex_sdk_flutter: @latest
+   permission_handler: ^11.3.1
 ```
 
 ## Usage
@@ -57,45 +53,94 @@ dependencies:
 
 2. **Launching the View**: Initialize essential widgets, check, and request for camera permission before launching KinesteX.
 
+Add to your Podfile:
+```dart
+post_install do |installer|
+  installer.pods_project.targets.each do |target|
+    flutter_additional_ios_build_settings(target)
+
+    target.build_configurations.each do |config|
+      # You can remove unused permissions here
+      # for more information: https://github.com/BaseflowIT/flutter-permission-handler/blob/master/permission_handler/ios/Classes/PermissionHandlerEnums.h
+      # e.g. when you don't need camera permission, just add 'PERMISSION_CAMERA=0'
+      config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= [
+        '$(inherited)',
+        ## dart: PermissionGroup.camera
+        'PERMISSION_CAMERA=1',
+      ]
+
+    end
+  end
+end
+```
+
+Request camera permission before launching KinesteX:
 ```dart
 void _checkCameraPermission() async {
-  if (await Permission.camera.request() != PermissionStatus.granted) {
-    _showCameraAccessDeniedAlert();
-  }
+   if (await Permission.camera.request() != PermissionStatus.granted) {
+      _showCameraAccessDeniedAlert();
+   }
 }
 
 void _showCameraAccessDeniedAlert() {
-  showDialog(
-    context: context, 
-    builder: (BuildContext context) {
-      return AlertDialog(
-        title: const Text("Camera Permission Denied"),
-        content: const Text("Camera access is required for this app to function properly."),
-        actions: <Widget>[
-          TextButton(
-            child: const Text("OK"),
-            onPressed: () {
-              Navigator.of(context).pop(); 
-            },
-          ),
-        ],
-      );
-    },
-  );
+   showDialog(
+      context: context,
+      builder: (BuildContext context) {
+         return AlertDialog(
+            title: const Text("Camera Permission Denied"),
+            content: const Text("Camera access is required for this app to function properly."),
+            actions: <Widget>[
+               TextButton(
+                  child: const Text("OK"),
+                  onPressed: () {
+                     Navigator.of(context).pop();
+                  },
+               ),
+            ],
+         );
+      },
+   );
 }
 ```
 
-### Integration Options
+## Integration Options
 
-| **functions**             | **Description**                                                 |
-|---------------------------|-----------------------------------------------------------------|
-| **createMainView**        | Integration of our Complete UX                                  |
-| **createPlanView**        | Integration of Individual Plan Component                        |
-| **createWorkoutView**     | Integration of Individual Workout Component                     |
-| **createChallengeView**   | Integration of Individual Exercise in a challenge form          |
-| **createCameraComponent** | Integration of our camera component with pose-analysis and feedback |
+| **functions**             | **Description**                                                       |
+|---------------------------|-----------------------------------------------------------------------|
+| **createMainView**        | Integration of our Complete UX                                        |
+| **createPlanView**        | Integration of Individual Plan Component                              |
+| **createWorkoutView**     | Integration of Individual Workout Component                           |
+| **createChallengeView**   | Integration of Individual Exercise in a challenge form                |
+| **createExperienceView**  | Integration of AI Experience. Please contact support for more details |
+| **createCameraComponent** | Integration of our camera component with pose-analysis and feedback   |
 
-### Available Categories to Sort Plans
+
+## Integration Steps:
+
+1. Identify the Integration Option(s) for your use-case
+
+2. Create a handleMessage function to process messages from KinesteX SDK:
+
+```dart
+ ValueNotifier<bool> showKinesteX = ValueNotifier<bool>(false);
+
+void handleWebViewMessage(WebViewMessage message) {
+  if (message is ExitKinestex) {
+    // Handle ExitKinestex message
+    setState(() {
+      showKinesteX.value = false;
+    });
+  }  else {
+    // Handle other message types
+    print("Other message received: ${message.data}");
+  }
+}
+```
+
+3. Customize and display each integration option:
+
+## MAIN Integration Option
+Available Categories to Sort Plans
 
 | **Plan Category (key: planCategory)** |
 |---------------------------------------|
@@ -104,156 +149,141 @@ void _showCameraAccessDeniedAlert() {
 | **Weight Management**                 |
 | **Rehabilitation**                    |
 
-### Example Integration
-
-1. Create a reference to `KinesteXAIFramework` component:
-
+Displaying the main view:
 ```dart
-ValueNotifier<bool> showKinesteX = ValueNotifier<bool>(false);
-ValueNotifier<int> reps = ValueNotifier<int>(0);
-ValueNotifier<String> mistake = ValueNotifier<String>("--");
-ValueNotifier<String?> updateExercise = ValueNotifier<String?>(null);
-
-void handleWebViewMessage(WebViewMessage message) {
-  switch (message.type) {
-    case 'exit_kinestex':
-      // hide KinesteX view
-      showKinesteX.value = false;
-      break;
-    // Handle all other cases as needed
-    default:
-      log('Other message: ${message.data}');
-  }
-}
-```
-
-2. Display KinesteX with Main Integration Option:
-
-```dart
-KinesteXAIFramework.createMainView(
-  apiKey: 'YOUR API KEY',
-  companyName: 'YOUR COMPANY',
-  userId: 'YOUR USER ID',
-  planCategory: PlanCategory.Cardio, // pass the plan category
-  isShowKinesTex: showKinesteX,
-  isLoading: ValueNotifier<bool>(false),
-  onMessageReceived: handleWebViewMessage,
+  KinesteXAIFramework.createMainView(
+    apiKey: apiKey,
+    companyName: company,
+    isShowKinestex: showKinesteX,
+    userId: userId,
+    planCategory: PlanCategory.Cardio,  // plan category
+    data: <String, dynamic>{ 'isHideHeaderMain': false }, // optional custom parameters
+    isLoading: ValueNotifier<bool>(false),
+    onMessageReceived: (message) {
+     handleWebViewMessage(message);
+    },
 );
 ```
 
-### Examples for Each Integration Option
-
-**Individual Plan**
+## PLAN Integration Option
 
 ```dart
-KinesteXAIFramework.createPlanView(
-  apiKey: 'YOUR API KEY',
-  companyName: 'YOUR COMPANY',
-  userId: 'YOUR USER ID',
-  planName: 'Circuit Training', // pass the name of the plan
-  isShowKinesTex: showKinesteX,
-  isLoading: ValueNotifier<bool>(false),
-  onMessageReceived: handleWebViewMessage,
+  KinesteXAIFramework.createPlanView(
+    apiKey: apiKey,
+    companyName: company,
+    userId: userId,
+    isShowKinestex: showKinesteX,
+    planName: "Circuit Training", // specify the plan name here
+    isLoading: ValueNotifier<bool>(false),
+    onMessageReceived: (message) {
+      handleWebViewMessage(message);
+    }
+    );
+```
+
+## WORKOUT Integration Option
+
+```dart
+  KinesteXAIFramework.createWorkoutView(
+        apiKey: apiKey,
+        isShowKinestex: showKinesteX,
+        companyName: company,
+        userId: userId,
+        workoutName: "Fitness Lite", // specify the workout name here
+        isLoading: ValueNotifier<bool>(false),
+        onMessageReceived: (message) {
+          handleWebViewMessage(message);
+        }
 );
 ```
 
-**Individual Workout**
+## CHALLENGE Integration Option
 
 ```dart
-KinesteXAIFramework.createWorkoutView(
-  apiKey: 'YOUR API KEY',
-  companyName: 'YOUR COMPANY',
-  userId: 'YOUR USER ID',
-  workoutName: 'Circuit Training', // pass the name of the workout
-  isShowKinesTex: showKinesteX,
-  isLoading: ValueNotifier<bool>(false),
-  onMessageReceived: handleWebViewMessage,
-);
+    KinesteXAIFramework.createChallengeView(
+        apiKey: apiKey,
+        companyName: company,
+        isShowKinestex: showKinesteX,
+        userId: userId,
+        exercise: "Squats", // Exercise title
+        countdown: 100,
+        isLoading: ValueNotifier<bool>(false),
+        onMessageReceived: (message) {
+          handleWebViewMessage(message);
+        }
+    );
 ```
 
-**Challenge Component**
+## EXPERIENCE Integration Option
+```dart
+    KinesteXAIFramework.createExperienceView(
+        apiKey: apiKey,
+        companyName: company,
+        isShowKinestex: showKinesteX,
+        userId: userId,
+        experience: "box",
+        isLoading: ValueNotifier<bool>(false),
+        onMessageReceived: (message) {
+        handleWebViewMessage(message);
+      }
+    );
 
-1. Change `postData`:
+```
+## CAMERA Integration Option
+
+1. Displaying KinesteXSDK:
 
 ```dart
-const postData = {
-  'key': apiKey,
-  'userId': 'YOUR USER ID',
-  'company': 'YOUR COMPANY NAME',
-  'exercise': 'Squats',
-  'countdown': 100,
-};
+   ValueListenableBuilder<String?>(
+        valueListenable: updateExercise,
+        builder: (context, value, _) {
+        return KinesteXAIFramework.createCameraComponent(
+        apiKey: apiKey,
+        companyName: company,
+        isShowKinestex: showKinesteX,
+        userId: userId,
+        exercises: ["Squats", "Jumping Jack"],
+        currentExercise: "Squats",
+        updatedExercise: value,
+        isLoading: ValueNotifier<bool>(false),
+        onMessageReceived: (message) {
+        handleWebViewMessage(message);
+        },
+        );
+    }),
 ```
-
-2. Change integration option in KinesteXSDK:
+2. Update current exercise by changing the notifier's value:
 
 ```dart
-KinesteXAIFramework.createChallengeView(
-  apiKey: 'YOUR API KEY',
-  companyName: 'YOUR COMPANY',
-  userId: 'YOUR USER ID',
-  exercise: 'Squats', // pass the name of the challenge exercise
-  countdown: 100, // duration of the challenge in seconds
-  isShowKinesTex: showKinesteX,
-  isLoading: ValueNotifier<bool>(false),
-  onMessageReceived: handleWebViewMessage,
-);
+ updateExercise.value = 'Jumping Jack';
 ```
-
-**Camera Component**
-
-1. Change `postData`:
+3. Handle message for reps and mistakes a person has done:
 
 ```dart
-const postData = {
-  'key': apiKey,
-  'userId': 'YOUR USER ID',
-  'company': 'YOUR COMPANY NAME',
-  'currentExercise': 'Squats',
-  'exercises': ['Squats', 'Jumping Jack'],
-};
+    ValueNotifier<int> reps = ValueNotifier<int>(0);
+    ValueNotifier<String> mistake = ValueNotifier<String>("--");
+    
+    void handleWebViewMessage(WebViewMessage message) {
+      if (message is ExitKinestex) {
+        // Handle ExitKinestex message
+        setState(() {
+          showKinesteX.value = false;
+        });
+      } else if (message is Reps) {
+        setState(() {
+          reps.value = message.data['value'] ?? 0;
+        });
+      } else if (message is Mistake) {
+        setState(() {
+          mistake.value = message.data['value'] ?? '--';
+        });
+      } else {
+        // Handle other message types
+        print("Other message received: ${message.data}");
+      }
+    }
 ```
 
-2. Changing current exercise:
-
-```dart
-void changeExercise() {
-  updateExercise.value = 'Jumping Jack';
-}
-```
-
-3. Displaying KinesteXSDK:
-
-```dart
-KinesteXAIFramework.createCameraComponent(
-  apiKey: 'YOUR API KEY',
-  companyName: 'YOUR COMPANY',
-  userId: 'YOUR USER ID',
-  exercises: ['Squats', 'Jumping Jack'],
-  currentExercise: 'Squats',
-  isShowKinesTex: showKinesteX,
-  isLoading: ValueNotifier<bool>(false),
-  onMessageReceived: handleWebViewMessage,
-  updatedExercise: updateExercise.value,
-);
-```
-
-4. Handle message for reps and mistakes a person has done:
-
-```dart
-void handleWebViewMessage(WebViewMessage message) {
-  switch (message.type) {
-    case 'reps':
-      reps.value = message.data['value'] ?? 0;
-      break;
-    case 'mistake':
-      mistake.value = message.data['value'] ?? '--';
-      break;
-    default:
-      log('Other message: ${message.data}');
-  }
-}
-```
 
 ## Data Points
 

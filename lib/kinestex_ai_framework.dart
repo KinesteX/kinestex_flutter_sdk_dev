@@ -23,7 +23,7 @@ class KinesteXAIFramework {
     );
 
     if (validationError != null) {
-      print("⚠️ Validation Error: $validationError");
+      print("KinesteX SDK: ⚠️ Validation Error: $validationError");
       return Container();
     } else {
       final data = <String, dynamic>{
@@ -42,14 +42,14 @@ class KinesteXAIFramework {
       validateCustomParams(customParams, data);
 
       return GenericWebView(
-        apiKey: apiKey,
-        companyName: companyName,
-        userId: userId,
-        url: "https://kinestex.vercel.app",
-        data: data,
-        isLoading: isLoading,
-        onMessageReceived: onMessageReceived,
-        showKinesteX: isShowKinestex
+          apiKey: apiKey,
+          companyName: companyName,
+          userId: userId,
+          url: "https://kinestex.vercel.app",
+          data: data,
+          isLoading: isLoading,
+          onMessageReceived: onMessageReceived,
+          showKinesteX: isShowKinestex
         // isHideHeaderMain: isHideHeaderMain, // Pass the parameter
       );
     }
@@ -71,7 +71,7 @@ class KinesteXAIFramework {
         containsDisallowedCharacters(userId) ||
         containsDisallowedCharacters(planName)) {
       print(
-          "⚠️ Validation Error: apiKey, companyName, userId, or planName contains disallowed characters");
+          "KinesteX SDK: ⚠️ Validation Error: apiKey, companyName, userId, or planName contains disallowed characters");
       return Container();
     } else {
       final adjustedPlanName = planName.replaceAll(' ', '%20');
@@ -89,14 +89,61 @@ class KinesteXAIFramework {
       validateCustomParams(customParams, data);
 
       return GenericWebView(
-        apiKey: apiKey,
-        companyName: companyName,
-        showKinesteX: isShowKinestex,
-        userId: userId,
-        url: url,
-        data: data,
-        isLoading: isLoading,
-        onMessageReceived: onMessageReceived
+          apiKey: apiKey,
+          companyName: companyName,
+          showKinesteX: isShowKinestex,
+          userId: userId,
+          url: url,
+          data: data,
+          isLoading: isLoading,
+          onMessageReceived: onMessageReceived
+        // isHideHeaderMain: isHideHeaderMain, // Pass the parameter
+      );
+    }
+  }
+
+  static Widget createExperienceView({
+    required String apiKey,
+    required String companyName,
+    required String userId,
+    required String experience,
+    UserDetails? user,
+    Map<String, dynamic>? customParams,
+    required ValueNotifier<bool> isLoading,
+    required ValueNotifier<bool> isShowKinestex,
+    required Function(WebViewMessage) onMessageReceived,
+  }) {
+    if (containsDisallowedCharacters(apiKey) ||
+        containsDisallowedCharacters(companyName) ||
+        containsDisallowedCharacters(userId) ||
+        containsDisallowedCharacters(experience)) {
+      print(
+          "KinesteX SDK: ⚠️ Validation Error: apiKey, companyName, userId, or planName contains disallowed characters");
+      return Container();
+    } else {
+      final adjustedExperience = experience.replaceAll(' ', '%20');
+      final url = "https://kinestex.vercel.app/experiences/$adjustedExperience";
+      final data = <String, dynamic>{
+        if (user != null) ...{
+          'age': user.age,
+          'height': user.height,
+          'weight': user.weight,
+          'gender': genderString(user.gender),
+          'lifestyle': lifestyleString(user.lifestyle),
+        },
+      };
+
+      validateCustomParams(customParams, data);
+
+      return GenericWebView(
+          apiKey: apiKey,
+          companyName: companyName,
+          showKinesteX: isShowKinestex,
+          userId: userId,
+          url: url,
+          data: data,
+          isLoading: isLoading,
+          onMessageReceived: onMessageReceived
         // isHideHeaderMain: isHideHeaderMain, // Pass the parameter
       );
     }
@@ -118,7 +165,7 @@ class KinesteXAIFramework {
         containsDisallowedCharacters(userId) ||
         containsDisallowedCharacters(workoutName)) {
       print(
-          "⚠️ Validation Error: apiKey, companyName, userId, or workoutName contains disallowed characters");
+          "KinesteX SDK: ⚠️ Validation Error: apiKey, companyName, userId, or workoutName contains disallowed characters");
       return Container();
     } else {
       final adjustedWorkoutName = workoutName.replaceAll(' ', '%20');
@@ -136,14 +183,14 @@ class KinesteXAIFramework {
       validateCustomParams(customParams, data);
 
       return GenericWebView(
-        apiKey: apiKey,
-        companyName: companyName,
-        showKinesteX: isShowKinestex,
-        userId: userId,
-        url: url,
-        data: data,
-        isLoading: isLoading,
-        onMessageReceived: onMessageReceived
+          apiKey: apiKey,
+          companyName: companyName,
+          showKinesteX: isShowKinestex,
+          userId: userId,
+          url: url,
+          data: data,
+          isLoading: isLoading,
+          onMessageReceived: onMessageReceived
         // isHideHeaderMain: isHideHeaderMain, // Pass the parameter
       );
     }
@@ -166,7 +213,7 @@ class KinesteXAIFramework {
         containsDisallowedCharacters(userId) ||
         containsDisallowedCharacters(exercise)) {
       print(
-          "⚠️ Validation Error: apiKey, companyName, userId, or exercise contains disallowed characters");
+          "KinesteX SDK: ⚠️ Validation Error: apiKey, companyName, userId, or exercise contains disallowed characters");
       return Container();
     } else {
       final data = <String, dynamic>{
@@ -184,14 +231,14 @@ class KinesteXAIFramework {
       validateCustomParams(customParams, data);
 
       return GenericWebView(
-        apiKey: apiKey,
-        showKinesteX: isShowKinestex,
-        companyName: companyName,
-        userId: userId,
-        url: "https://kinestex-challenge.vercel.app",
-        data: data,
-        isLoading: isLoading,
-        onMessageReceived: onMessageReceived
+          apiKey: apiKey,
+          showKinesteX: isShowKinestex,
+          companyName: companyName,
+          userId: userId,
+          url: "https://kinestex.vercel.app/challenge",
+          data: data,
+          isLoading: isLoading,
+          onMessageReceived: onMessageReceived
         // isHideHeaderMain: isHideHeaderMain, // Pass the parameter
       );
     }
@@ -212,7 +259,7 @@ class KinesteXAIFramework {
   }) {
     for (final exercise in exercises) {
       if (containsDisallowedCharacters(exercise)) {
-        print("⚠️ Validation Error: $exercise contains disallowed characters");
+        print("KinesteX SDK: ⚠️ Validation Error: $exercise contains disallowed characters");
         return Container();
       }
     }
@@ -222,7 +269,7 @@ class KinesteXAIFramework {
         containsDisallowedCharacters(userId) ||
         containsDisallowedCharacters(currentExercise)) {
       print(
-          "⚠️ Validation Error: apiKey, companyName, userId, or currentExercise contains disallowed characters");
+          "KinesteX SDK: ⚠️ Validation Error: apiKey, companyName, userId, or currentExercise contains disallowed characters");
       return Container();
     } else {
       final data = <String, dynamic>{
@@ -239,17 +286,17 @@ class KinesteXAIFramework {
 
       validateCustomParams(customParams, data);
 
-      log("Updated - ---AIFrameWork----------  >  ${updatedExercise}");
+      log("KinesteX SDK: Updated exercise:  ${updatedExercise}");
       return GenericWebView(
-        apiKey: apiKey,
-        companyName: companyName,
-        showKinesteX: isShowKinestex,
-        userId: userId,
-        url: "https://kinestex-camera-ai.vercel.app",
-        data: data,
-        isLoading: isLoading,
-        onMessageReceived: onMessageReceived,
-        updatedExercise: updatedExercise
+          apiKey: apiKey,
+          companyName: companyName,
+          showKinesteX: isShowKinestex,
+          userId: userId,
+          url: "https://kinestex-camera-ai.vercel.app",
+          data: data,
+          isLoading: isLoading,
+          onMessageReceived: onMessageReceived,
+          updatedExercise: updatedExercise
         // isHideHeaderMain: isHideHeaderMain, // Pass the parameter
       );
     }
@@ -261,7 +308,7 @@ class KinesteXAIFramework {
       customParams.forEach((key, value) {
         if (containsDisallowedCharacters(key) ||
             (value is String && containsDisallowedCharacters(value))) {
-          print('⚠️ Validation Error: Custom parameter key or value contains disallowed characters');
+          print('KinesteX SDK: ⚠️ Validation Error: Custom parameter key or value contains disallowed characters');
         } else {
           data[key] = value;
         }

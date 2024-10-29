@@ -50,8 +50,6 @@ class _GenericWebViewState extends State<GenericWebView> {
   void didUpdateWidget(covariant GenericWebView oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    log("Updated - -------------  >  ${widget.updatedExercise}");
-
     if (oldWidget.updatedExercise != widget.updatedExercise && widget.updatedExercise != null) {
       updateCurrentExercise(widget.updatedExercise!);
     }
@@ -97,7 +95,6 @@ class _GenericWebViewState extends State<GenericWebView> {
                   controller.addJavaScriptHandler(
                     handlerName: 'messageHandler',
                     callback: (args) {
-                      log('- - - - - Received - - - -  >>>>   ${args} ');
                       if (args.isNotEmpty) {
                         final Map<String, dynamic> data = jsonDecode(args[0]);
                         final WebViewMessage webViewMessage =
@@ -193,7 +190,7 @@ class _GenericWebViewState extends State<GenericWebView> {
         await _controller!.evaluateJavascript(source: script);
       }
     } catch (e) {
-      log('Error sending message: $e');
+      log('KinesteX SDK: Error sending message: $e');
     }
 
 
@@ -211,7 +208,7 @@ class _GenericWebViewState extends State<GenericWebView> {
       window.postMessage({
         'currentExercise': '$exercise' }, '*');
     ''';
-    log("Update - ------------- script  >  $script");
+    log("KinesteX SDK: Updating script:  $script");
     if (_controller != null) {
       await _controller!.evaluateJavascript(source: script);
     }
