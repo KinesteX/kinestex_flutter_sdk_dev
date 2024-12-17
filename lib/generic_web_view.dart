@@ -90,24 +90,34 @@ class _GenericWebViewState extends State<GenericWebView> {
                 onWebViewCreated: (InAppWebViewController controller) {
                   _controller = controller;
                   webViewState.setWebViewController(controller);
-
-
                   controller.addJavaScriptHandler(
                     handlerName: 'messageHandler',
                     callback: (args) {
-                      if (args.isNotEmpty) {
-                        final Map<String, dynamic> data = jsonDecode(args[0]);
-                        final WebViewMessage webViewMessage =
-                        WebViewMessage.fromJson(data);
-                        widget.onMessageReceived(webViewMessage);
+                      try {
+                        if (args.isNotEmpty) {
+                          final dynamic data = args[0];
+                          if (data is String) {
+                            print('Received data as String: $data');
+                            final Map<String, dynamic> decodedData = jsonDecode(data);
+                            final WebViewMessage webViewMessage = WebViewMessage.fromJson(decodedData);
+                            widget.onMessageReceived(webViewMessage);
+                          } else if (data is Map<String, dynamic>) {
+                            print('Received data as Map<String, dynamic>: $data');
+                            final WebViewMessage webViewMessage = WebViewMessage.fromJson(data);
+                            widget.onMessageReceived(webViewMessage);
+                          } else {
+                            print('Received data in unexpected format: $data');
+                          }
+                        } else {
+                          print('No data received in messageHandler');
+                        }
+                      } catch (e, stackTrace) {
+                        print('Error in messageHandler: $e');
+                        print('Stack trace: $stackTrace');
                       }
-
                     },
                   );
-
-
                 },
-
                 onLoadStop: (controller, url) async {
                   widget.isLoading.value = false;
 
@@ -156,19 +166,8 @@ class _GenericWebViewState extends State<GenericWebView> {
         'currentExercise': '${widget.data['currentExercise'] ?? ''}',
         ${_mapToJson(widget.data)}
       };
-     
       window.postMessage(message, '${widget.url}');
-        window.addEventListener('message', (event) => {
-        
-        if (event.data) {
-           window.flutter_inappwebview.callHandler('messageHandler',event.data);
-         }
-                      
-        });
     }
-
-
-  
 
   function checkReadiness() {
     if (document.readyState === 'complete') {
@@ -187,7 +186,9 @@ class _GenericWebViewState extends State<GenericWebView> {
     try {
       if (_controller != null) {
        // log('sending message: $script');
+        print("Loading initial data");
         await _controller!.evaluateJavascript(source: script);
+        print("Initial data evaluated");
       }
     } catch (e) {
       log('KinesteX SDK: Error sending message: $e');
@@ -206,7 +207,7 @@ class _GenericWebViewState extends State<GenericWebView> {
   Future<void> updateCurrentExercise(String exercise) async {
     final String script = '''
       window.postMessage({
-        'currentExercise': '$exercise' }, '*');
+        'currentExercise': '$exercise' }, '${widget.url}');
     ''';
     log("KinesteX SDK: Updating script:  $script");
     if (_controller != null) {

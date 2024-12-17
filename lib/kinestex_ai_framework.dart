@@ -292,7 +292,7 @@ class KinesteXAIFramework {
           companyName: companyName,
           showKinesteX: isShowKinestex,
           userId: userId,
-          url: "https://kinestex-camera-ai.vercel.app",
+          url: "https://kinestex.vercel.app/camera",
           data: data,
           isLoading: isLoading,
           onMessageReceived: onMessageReceived,
