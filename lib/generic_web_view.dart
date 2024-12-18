@@ -59,15 +59,16 @@ class _GenericWebViewState extends State<GenericWebView> {
   Widget build(BuildContext context) {
     return Consumer<KinesteXViewState>(
       builder: (context, webViewState, child) {
-        return WillPopScope(
-          onWillPop: () async {
+        return PopScope(
+          canPop: false,
+          onPopInvokedWithResult: (didPop, dynamic) async {
             final webViewController = webViewState.webViewController;
             if (await webViewController?.canGoBack() ?? false) {
-              webViewController?.goBack();
-              return false;
+              await webViewController?.goBack();
+              return;
             }
             widget.showKinesteX.value = false;
-            return false;
+            return;
           },
           child: Stack(
             children: [
