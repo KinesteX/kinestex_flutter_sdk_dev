@@ -2,10 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
-
-import 'models/kinestex_view_state.dart';
 import 'models/web_view_message.dart';
 
 
@@ -57,14 +54,11 @@ class _GenericWebViewState extends State<GenericWebView> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<KinesteXViewState>(
-      builder: (context, webViewState, child) {
         return PopScope(
           canPop: false,
           onPopInvokedWithResult: (didPop, dynamic) async {
-            final webViewController = webViewState.webViewController;
-            if (await webViewController?.canGoBack() ?? false) {
-              await webViewController?.goBack();
+            if (await _controller?.canGoBack() ?? false) {
+              await _controller?.goBack();
               return;
             }
             widget.showKinesteX.value = false;
@@ -75,7 +69,6 @@ class _GenericWebViewState extends State<GenericWebView> {
               InAppWebView(
                 initialUrlRequest: URLRequest(url: WebUri(widget.url)),
                 initialSettings: InAppWebViewSettings(
-
                   javaScriptEnabled: true,
                   allowsAirPlayForMediaPlayback: true,
                   allowsInlineMediaPlayback: true,
@@ -87,10 +80,14 @@ class _GenericWebViewState extends State<GenericWebView> {
 
 
                 ),
-
+                onConsoleMessage: (controller, consoleMessage) {
+                 // log('KinesteX SDK: ${consoleMessage.message}');
+                },
+               onReceivedError: (controller, request, error) {
+                 // log('KinesteX SDK: ${error.description}');
+                },
                 onWebViewCreated: (InAppWebViewController controller) {
                   _controller = controller;
-                  webViewState.setWebViewController(controller);
                   controller.addJavaScriptHandler(
                     handlerName: 'messageHandler',
                     callback: (args) {
@@ -148,8 +145,7 @@ class _GenericWebViewState extends State<GenericWebView> {
             ],
           ),
         );
-      },
-    );
+
   }
 
 
