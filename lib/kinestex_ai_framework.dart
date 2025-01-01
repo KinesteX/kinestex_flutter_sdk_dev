@@ -204,6 +204,7 @@ class KinesteXAIFramework {
     required int countdown,
     UserDetails? user,
     Map<String, dynamic>? customParams,
+    bool showLeaderboard = true,
     required ValueNotifier<bool> isShowKinestex,
     required ValueNotifier<bool> isLoading,
     required Function(WebViewMessage) onMessageReceived
@@ -219,6 +220,7 @@ class KinesteXAIFramework {
       final data = <String, dynamic>{
         'exercise': exercise,
         'countdown': countdown,
+        'showLeaderboard': showLeaderboard,
         if (user != null) ...{
           'age': user.age,
           'height': user.height,
@@ -236,6 +238,51 @@ class KinesteXAIFramework {
           companyName: companyName,
           userId: userId,
           url: "https://kinestex.vercel.app/challenge",
+          data: data,
+          isLoading: isLoading,
+          onMessageReceived: onMessageReceived
+        // isHideHeaderMain: isHideHeaderMain, // Pass the parameter
+      );
+    }
+  }
+
+  static Widget createLeaderboardView({
+    required String apiKey,
+    required String companyName,
+    required String userId,
+    String exercise = "Squats",
+    username = "",
+    Map<String, dynamic>? customParams,
+    required ValueNotifier<bool> isShowKinestex,
+    required ValueNotifier<bool> isLoading,
+    required Function(WebViewMessage) onMessageReceived
+  }) {
+    if (containsDisallowedCharacters(apiKey) ||
+        containsDisallowedCharacters(companyName) ||
+        containsDisallowedCharacters(userId) ||
+        containsDisallowedCharacters(exercise) ||
+    containsDisallowedCharacters(username)) {
+      print(
+          "KinesteX SDK: ⚠️ Validation Error: apiKey, companyName, userId, exercise, or/and username contains disallowed characters");
+      return Container();
+    } else {
+      final data = <String, dynamic>{
+        'exercise': exercise,
+      };
+
+      validateCustomParams(customParams, data);
+
+      final adjustedUserName = username.replaceAll(' ', '%20');
+      var url = "https://kinestex.vercel.app/leaderboard";
+      if (username.isNotEmpty) url = "https://kinestex.vercel.app/leaderboard?username=$adjustedUserName";
+
+
+      return GenericWebView(
+          apiKey: apiKey,
+          showKinesteX: isShowKinestex,
+          companyName: companyName,
+          userId: userId,
+          url: url,
           data: data,
           isLoading: isLoading,
           onMessageReceived: onMessageReceived
