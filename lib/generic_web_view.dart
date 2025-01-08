@@ -138,7 +138,11 @@ class _GenericWebViewState extends State<GenericWebView> {
                 valueListenable: widget.isLoading,
                 builder: (context, isLoading, child) {
                   return isLoading
-                      ? const Center(child: CircularProgressIndicator())
+                      ? Container(
+                    width: double.infinity,
+                    height: double.infinity,
+                    color: const Color(0xFF000000),
+                    )
                       : const SizedBox.shrink();
                 },
               ),
