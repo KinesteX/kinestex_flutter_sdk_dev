@@ -1,6 +1,6 @@
 name: kinestex_sdk_flutter
 description: "KinesteX AI provides personal AI Fitness and Physio to your clients"
-version: 1.2.5
+version: 1.2.6
 homepage: https://kinestex.com
 
 environment:
@@ -10,7 +10,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  flutter_inappwebview: ^6.1.5
+  flutter_inappwebview: '>=5.0.0 <7.0.0'
 
 dev_dependencies:
   flutter_test:

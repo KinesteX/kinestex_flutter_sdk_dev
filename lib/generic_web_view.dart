@@ -36,12 +36,22 @@ class GenericWebView extends StatefulWidget {
 
 class _GenericWebViewState extends State<GenericWebView> {
   InAppWebViewController? _controller;
+  Timer? _launchTimer;  // Add this
+  int _retryCount = 0;  // Add this
+  final int _maxRetries = 2;  // Add this
 
   @override
   void initState() {
 
     super.initState();
   }
+
+  @override
+  void dispose() {
+    _launchTimer?.cancel();  // Add this
+    super.dispose();
+  }
+
 
   @override
   void didUpdateWidget(covariant GenericWebView oldWidget) {
@@ -74,7 +84,7 @@ class _GenericWebViewState extends State<GenericWebView> {
                   allowsInlineMediaPlayback: true,
                   allowsBackForwardNavigationGestures: true,
                   mediaPlaybackRequiresUserGesture: false,
-
+                  transparentBackground: true,               // Add this
                   verticalScrollBarEnabled: false,
                   horizontalScrollBarEnabled: false,
 
@@ -95,30 +105,41 @@ class _GenericWebViewState extends State<GenericWebView> {
                         if (args.isNotEmpty) {
                           final dynamic data = args[0];
                           if (data is String) {
-                            print('Received data as String: $data');
+                            log('Received data as String: $data');
                             final Map<String, dynamic> decodedData = jsonDecode(data);
                             final WebViewMessage webViewMessage = WebViewMessage.fromJson(decodedData);
+                            // Cancel the retry timer
+                            if (webViewMessage is KinestexLaunched) {
+                              log("dismissing timer");
+                              _launchTimer?.cancel(); // Cancel the timer
+                              _retryCount = 0; // Reset retry count
+                            }
                             widget.onMessageReceived(webViewMessage);
                           } else if (data is Map<String, dynamic>) {
-                            print('Received data as Map<String, dynamic>: $data');
+                            log('Received data as Map<String, dynamic>: $data');
                             final WebViewMessage webViewMessage = WebViewMessage.fromJson(data);
+                            // Cancel the retry timer
+                            if (webViewMessage is KinestexLaunched) {
+                              log("dismissing timer");
+                              _launchTimer?.cancel(); // Cancel the timer
+                              _retryCount = 0; // Reset retry count
+                            }
                             widget.onMessageReceived(webViewMessage);
                           } else {
-                            print('Received data in unexpected format: $data');
+                            log('Received data in unexpected format: $data');
                           }
-                        } else {
-                          print('No data received in messageHandler');
                         }
                       } catch (e, stackTrace) {
-                        print('Error in messageHandler: $e');
-                        print('Stack trace: $stackTrace');
+                        log('Error in messageHandler: $e');
+                        log('Stack trace: $stackTrace');
                       }
                     },
                   );
                 },
                 onLoadStop: (controller, url) async {
-                  widget.isLoading.value = false;
-
+                  Future.delayed(const Duration(milliseconds: 500), () {
+                    widget.isLoading.value = false;
+                  });
                   _loadInitialData();
                 },
 
@@ -187,14 +208,23 @@ class _GenericWebViewState extends State<GenericWebView> {
     try {
       if (_controller != null) {
        // log('sending message: $script');
-        print("Loading initial data");
+        log("Loading initial data");
         await _controller!.evaluateJavascript(source: script);
-        print("Initial data evaluated");
+        log("Initial data evaluated");
       }
     } catch (e) {
       log('KinesteX SDK: Error sending message: $e');
     }
 
+    // Retry mechanism
+    _launchTimer?.cancel();
+    _launchTimer = Timer(const Duration(seconds: 2), () {
+      if (_retryCount < _maxRetries) {
+        _retryCount++;
+        log("Initial data not received within 2 seconds. Resending. Attempt $_retryCount.");
+        _loadInitialData();
+      }
+    });
 
 
   }
