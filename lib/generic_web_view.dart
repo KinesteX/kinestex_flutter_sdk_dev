@@ -38,11 +38,11 @@ class _GenericWebViewState extends State<GenericWebView> {
   InAppWebViewController? _controller;
   Timer? _launchTimer;  // Add this
   int _retryCount = 0;  // Add this
-  final int _maxRetries = 2;  // Add this
+  final int _maxRetries = 3;  // Add this
 
   @override
   void initState() {
-
+    // PlatformInAppWebViewController.debugLoggingSettings.enabled = false;
     super.initState();
   }
 
@@ -88,13 +88,10 @@ class _GenericWebViewState extends State<GenericWebView> {
                   verticalScrollBarEnabled: false,
                   horizontalScrollBarEnabled: false,
 
-
                 ),
                 onConsoleMessage: (controller, consoleMessage) {
-                 // log('KinesteX SDK: ${consoleMessage.message}');
                 },
                onReceivedError: (controller, request, error) {
-                 // log('KinesteX SDK: ${error.description}');
                 },
                 onWebViewCreated: (InAppWebViewController controller) {
                   _controller = controller;
@@ -105,22 +102,22 @@ class _GenericWebViewState extends State<GenericWebView> {
                         if (args.isNotEmpty) {
                           final dynamic data = args[0];
                           if (data is String) {
-                            log('Received data as String: $data');
+                            log('Received data (S): $data');
                             final Map<String, dynamic> decodedData = jsonDecode(data);
                             final WebViewMessage webViewMessage = WebViewMessage.fromJson(decodedData);
                             // Cancel the retry timer
                             if (webViewMessage is KinestexLaunched) {
-                              log("dismissing timer");
+                              log("Dismissing timer");
                               _launchTimer?.cancel(); // Cancel the timer
                               _retryCount = 0; // Reset retry count
                             }
                             widget.onMessageReceived(webViewMessage);
                           } else if (data is Map<String, dynamic>) {
-                            log('Received data as Map<String, dynamic>: $data');
+                            log('Received data (M): $data');
                             final WebViewMessage webViewMessage = WebViewMessage.fromJson(data);
                             // Cancel the retry timer
                             if (webViewMessage is KinestexLaunched) {
-                              log("dismissing timer");
+                              log("Dismissing timer");
                               _launchTimer?.cancel(); // Cancel the timer
                               _retryCount = 0; // Reset retry count
                             }
@@ -229,18 +226,20 @@ class _GenericWebViewState extends State<GenericWebView> {
 
   }
   String _mapToJson(Map<String, dynamic> map) {
+    // Use jsonEncode on the value to preserve its type in the JS object
     return map.entries
         .where((e) => e.key != 'exercises' && e.key != 'currentExercise')
-        .map((e) => "'${e.key}': '${e.value}'")
+        .map((e) => "'${e.key}': ${jsonEncode(e.value)}") // Use jsonEncode here
         .join(', ');
   }
+
 
   Future<void> updateCurrentExercise(String exercise) async {
     final String script = '''
       window.postMessage({
         'currentExercise': '$exercise' }, '${widget.url}');
     ''';
-    log("KinesteX SDK: Updating script:  $script");
+    log("KinesteX SDK: Updating currentExercise: $exercise");
     if (_controller != null) {
       await _controller!.evaluateJavascript(source: script);
     }
