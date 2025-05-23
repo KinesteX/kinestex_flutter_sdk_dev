@@ -35,6 +35,9 @@ class GenericWebView extends StatefulWidget {
 
 class _GenericWebViewState extends State<GenericWebView> {
   InAppWebViewController? _controller;
+  Timer? _launchTimer; // Add this
+  int _retryCount = 0; // Add this
+  final int _maxRetries = 3; // Add this
 
   @override
   void initState() {
@@ -44,6 +47,7 @@ class _GenericWebViewState extends State<GenericWebView> {
 
   @override
   void dispose() {
+    _launchTimer?.cancel(); // Add this
     super.dispose();
   }
 
@@ -100,6 +104,12 @@ class _GenericWebViewState extends State<GenericWebView> {
                             jsonDecode(data);
                         final WebViewMessage webViewMessage =
                             WebViewMessage.fromJson(decodedData);
+                        // Cancel the retry timer
+                        if (webViewMessage is KinestexLaunched) {
+                          log("Dismissing timer");
+                          _launchTimer?.cancel(); // Cancel the timer
+                          _retryCount = 0; // Reset retry count
+                        }
                         if (webViewMessage.data["type"] == "kinestex_loaded") {
                           Future.delayed(const Duration(milliseconds: 200), () {
                             widget.isLoading.value = false;
@@ -111,6 +121,12 @@ class _GenericWebViewState extends State<GenericWebView> {
                         log('Received data (M): $data');
                         final WebViewMessage webViewMessage =
                             WebViewMessage.fromJson(data);
+                        // Cancel the retry timer
+                        if (webViewMessage is KinestexLaunched) {
+                          log("Dismissing timer");
+                          _launchTimer?.cancel(); // Cancel the timer
+                          _retryCount = 0; // Reset retry count
+                        }
                         if (webViewMessage.data["type"] == "kinestex_loaded") {
                           Future.delayed(const Duration(milliseconds: 200), () {
                             widget.isLoading.value = false;
@@ -158,7 +174,6 @@ class _GenericWebViewState extends State<GenericWebView> {
 
   void _loadInitialData() async {
     String script = """
-
     function sendMessage() {
       const message = {
         'key': '${widget.apiKey}',
@@ -170,18 +185,7 @@ class _GenericWebViewState extends State<GenericWebView> {
       };
       window.postMessage(message, '${widget.url}');
     }
-
-  function checkReadiness() {
-    if (document.readyState === 'complete') {
-      sendMessage();
-    } else {
-      document.addEventListener('DOMContentLoaded', sendMessage);
-    }
-    
-  }
-  
-    setTimeout(checkReadiness, 100); 
-    
+    setTimeout(sendMessage, 100); 
   """;
 
     try {
@@ -194,6 +198,16 @@ class _GenericWebViewState extends State<GenericWebView> {
     } catch (e) {
       log('KinesteX SDK: Error sending message: $e');
     }
+
+    // Retry mechanism
+    _launchTimer?.cancel();
+    _launchTimer = Timer(const Duration(seconds: 1), () {
+      if (_retryCount < _maxRetries) {
+        _retryCount++;
+        log("Initial data not received within 1 seconds. Resending. Attempt $_retryCount.");
+        _loadInitialData();
+      }
+    });
   }
 
   String _mapToJson(Map<String, dynamic> map) {
