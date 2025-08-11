@@ -149,6 +149,89 @@ class KinesteXAIFramework {
     }
   }
 
+  static Widget createPersonalizedPlanView({
+    required String apiKey,
+    required String companyName,
+    required String userId,
+    UserDetails? user,
+    Map<String, dynamic>? customParams,
+    required ValueNotifier<bool> isLoading,
+    required ValueNotifier<bool> isShowKinestex,
+    required Function(WebViewMessage) onMessageReceived,
+  }) {
+    if (containsDisallowedCharacters(apiKey) ||
+        containsDisallowedCharacters(companyName) ||
+        containsDisallowedCharacters(userId)) {
+      print(
+          "KinesteX SDK: ⚠️ Validation Error: apiKey, companyName, or userId, contains disallowed characters");
+      return Container();
+    } else {
+      const url = "https://kinestex.vercel.app/personalized-plan";
+      final data = <String, dynamic>{
+        if (user != null) ...{
+          'age': user.age,
+          'height': user.height,
+          'weight': user.weight,
+          'gender': genderString(user.gender),
+          'lifestyle': lifestyleString(user.lifestyle),
+        },
+      };
+
+      validateCustomParams(customParams, data);
+
+      return GenericWebView(
+          apiKey: apiKey,
+          companyName: companyName,
+          showKinesteX: isShowKinestex,
+          userId: userId,
+          url: url,
+          data: data,
+          isLoading: isLoading,
+          onMessageReceived: onMessageReceived
+      );
+    }
+  }
+
+  static Widget createAdminWorkoutEditor({
+    required String apiKey,
+    required String companyName,
+    required String userId,
+    required String organization,
+    Map<String, dynamic>? customParams,
+    required ValueNotifier<bool> isLoading,
+    required ValueNotifier<bool> isShowKinestex,
+    required Function(WebViewMessage) onMessageReceived
+  }) {
+    if (containsDisallowedCharacters(apiKey) ||
+        containsDisallowedCharacters(companyName) ||
+        containsDisallowedCharacters(userId) || containsDisallowedCharacters(organization)) {
+      print(
+          "KinesteX SDK: ⚠️ Validation Error: apiKey, companyName, userId, or/and organization contain disallowed characters");
+      return Container();
+    } else {
+      const url = "https://admin.kinestex.com/main?isCustomAuth=true&hideSidebar=true&hidePlansTab=true";
+      final data = <String, dynamic>{
+          'organization': organization,
+          'apiKey': apiKey,
+          'companyName': companyName,
+      };
+
+      validateCustomParams(customParams, data);
+
+      return GenericWebView(
+          apiKey: apiKey,
+          companyName: companyName,
+          showKinesteX: isShowKinestex,
+          userId: userId,
+          url: url,
+          data: data,
+          isLoading: isLoading,
+          onMessageReceived: onMessageReceived
+      );
+    }
+  }
+
+
   static Widget createWorkoutView({
     required String apiKey,
     required String companyName,
