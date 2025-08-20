@@ -209,7 +209,7 @@ class KinesteXAIFramework {
           "KinesteX SDK: ⚠️ Validation Error: apiKey, companyName, userId, or/and organization contain disallowed characters");
       return Container();
     } else {
-      const url = "https://admin.kinestex.com/main?isCustomAuth=true&hideSidebar=true&hidePlansTab=true";
+      const url = "https://admin.kinestex.com/main?isCustomAuth=true&hideSidebar=true&hidePlansTab=true&tab=workouts";
       final data = <String, dynamic>{
           'organization': organization,
           'apiKey': apiKey,
