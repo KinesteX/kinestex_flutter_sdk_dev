@@ -198,35 +198,56 @@ class KinesteXAIFramework {
     required String userId,
     required String organization,
     Map<String, dynamic>? customParams,
+    Map<String, dynamic>? customQueries,
     required ValueNotifier<bool> isLoading,
     required ValueNotifier<bool> isShowKinestex,
     required Function(WebViewMessage) onMessageReceived
   }) {
     if (containsDisallowedCharacters(apiKey) ||
         containsDisallowedCharacters(companyName) ||
-        containsDisallowedCharacters(userId) || containsDisallowedCharacters(organization)) {
+        containsDisallowedCharacters(userId) ||
+        containsDisallowedCharacters(organization)) {
       print(
           "KinesteX SDK: ⚠️ Validation Error: apiKey, companyName, userId, or/and organization contain disallowed characters");
       return Container();
     } else {
-      const url = "https://admin.kinestex.com/main?isCustomAuth=true&hideSidebar=true&hidePlansTab=true&tab=workouts";
+      // Base url
+      String url = "https://admin.kinestex.com/main?isCustomAuth=true&hideSidebar=true";
+
+      // Add extra queries if present
+      if (customQueries != null && customQueries.isNotEmpty) {
+        // Build a query string like &flag=true&count=5
+        final extra = customQueries.entries.map((e) {
+          final key = Uri.encodeQueryComponent(e.key);
+          final value = e.value;
+          // Support bool/num/string; anything else -> stringified safely
+          if (value is bool || value is num) {
+            return '$key=$value';
+          } else {
+            return '$key=${Uri.encodeQueryComponent(value.toString())}';
+          }
+        }).join('&');
+
+        url = '$url&$extra';
+      }
+
       final data = <String, dynamic>{
-          'organization': organization,
-          'apiKey': apiKey,
-          'companyName': companyName,
+        'organization': organization,
+        'apiKey': apiKey,
+        'companyName': companyName,
       };
 
       validateCustomParams(customParams, data);
 
       return GenericWebView(
-          apiKey: apiKey,
-          companyName: companyName,
-          showKinesteX: isShowKinestex,
-          userId: userId,
-          url: url,
-          data: data,
-          isLoading: isLoading,
-          onMessageReceived: onMessageReceived
+        apiKey: apiKey,
+        companyName: companyName,
+        showKinesteX: isShowKinestex,
+        userId: userId,
+        url: url,
+        data: data,
+        isLoading: isLoading,
+        onMessageReceived: onMessageReceived,
       );
     }
   }
