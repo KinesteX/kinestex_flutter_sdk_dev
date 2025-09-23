@@ -201,55 +201,94 @@ class KinesteXAIFramework {
     Map<String, dynamic>? customQueries,
     required ValueNotifier<bool> isLoading,
     required ValueNotifier<bool> isShowKinestex,
-    required Function(WebViewMessage) onMessageReceived
+    required Function(WebViewMessage) onMessageReceived,
+    // New:
+    AdminContentType? contentType,
+    String? contentId,
   }) {
+    // Validate base fields
     if (containsDisallowedCharacters(apiKey) ||
         containsDisallowedCharacters(companyName) ||
         containsDisallowedCharacters(userId) ||
         containsDisallowedCharacters(organization)) {
       print(
-          "KinesteX SDK: ⚠️ Validation Error: apiKey, companyName, userId, or/and organization contain disallowed characters");
-      return Container();
-    } else {
-      // Base url
-      String url = "https://admin.kinestex.com/main?isCustomAuth=true&hideSidebar=true";
-
-      // Add extra queries if present
-      if (customQueries != null && customQueries.isNotEmpty) {
-        // Build a query string like &flag=true&count=5
-        final extra = customQueries.entries.map((e) {
-          final key = Uri.encodeQueryComponent(e.key);
-          final value = e.value;
-          // Support bool/num/string; anything else -> stringified safely
-          if (value is bool || value is num) {
-            return '$key=$value';
-          } else {
-            return '$key=${Uri.encodeQueryComponent(value.toString())}';
-          }
-        }).join('&');
-
-        url = '$url&$extra';
-      }
-
-      final data = <String, dynamic>{
-        'organization': organization,
-        'apiKey': apiKey,
-        'companyName': companyName,
-      };
-
-      validateCustomParams(customParams, data);
-
-      return GenericWebView(
-        apiKey: apiKey,
-        companyName: companyName,
-        showKinesteX: isShowKinestex,
-        userId: userId,
-        url: url,
-        data: data,
-        isLoading: isLoading,
-        onMessageReceived: onMessageReceived,
+        "KinesteX SDK: ⚠️ Validation Error: apiKey, companyName, userId, "
+            "or/and organization contain disallowed characters",
       );
+      return Container();
     }
+
+    // If one of contentType/contentId is provided, both must be provided
+    final hasContentType = contentType != null;
+    final hasContentId = contentId != null && contentId.isNotEmpty;
+
+    if (hasContentType != hasContentId) {
+      print(
+        "KinesteX SDK: ⚠️ Validation Error: both contentType and contentId "
+            "must be provided together",
+      );
+      return Container();
+    }
+
+    if (hasContentId && containsDisallowedCharacters(contentId!)) {
+      print(
+        "KinesteX SDK: ⚠️ Validation Error: contentId contains disallowed "
+            "characters",
+      );
+      return Container();
+    }
+
+    // Build path
+    final List<String> pathSegments = hasContentType && hasContentId
+        ? <String>[segmentFor(contentType!), contentId!]
+        : <String>['main'];
+
+    // Base query params (allow customQueries to override if needed)
+    final qp = <String, String>{
+      'isCustomAuth': 'true',
+      'hideSidebar': 'true',
+    };
+
+    // Merge customQueries (stringify safely)
+    if (customQueries != null && customQueries.isNotEmpty) {
+      for (final entry in customQueries.entries) {
+        final key = entry.key;
+        final value = entry.value;
+        if (value == null) continue;
+        if (value is bool || value is num) {
+          qp[key] = value.toString();
+        } else {
+          qp[key] = value.toString();
+        }
+      }
+    }
+
+    // Use Uri to ensure proper encoding for both path and query
+    final uri = Uri(
+      scheme: 'https',
+      host: 'admin.kinestex.com',
+      pathSegments: pathSegments,
+      queryParameters: qp,
+    );
+
+    final data = <String, dynamic>{
+      'organization': organization,
+      'apiKey': apiKey,
+      'companyName': companyName,
+    };
+
+    validateCustomParams(customParams, data);
+
+    return GenericWebView(
+      apiKey: apiKey,
+      companyName: companyName,
+      showKinesteX: isShowKinestex,
+      userId: userId,
+      url: uri.toString(),
+      data: data,
+      isLoading: isLoading,
+      onMessageReceived: onMessageReceived,
+    );
   }
 
 

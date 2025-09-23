@@ -1,7 +1,18 @@
 enum PlanCategory { Cardio, WeightManagement, Strength, Rehabilitation, Custom }
 enum Gender { Male, Female, Unknown }
 enum Lifestyle { Sedentary, SlightlyActive, Active, VeryActive }
+enum AdminContentType { workout, plan, exercise }
 
+String segmentFor(AdminContentType type) {
+switch (type) {
+case AdminContentType.workout:
+return 'workouts';
+case AdminContentType.plan:
+return 'plans';
+case AdminContentType.exercise:
+return 'exercises';
+}
+}
 String planCategoryString(PlanCategory category) {
   switch (category) {
     case PlanCategory.Cardio:
