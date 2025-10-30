@@ -27,6 +27,14 @@ class KinesteXInitializer {
     }
   }
 
+  Future<void> dispose() async {
+    try {
+      await GenericWebView.disposeWarmup();
+    } catch (e) {
+      _logger.error('Dispose error', e);
+    }
+  }
+
   Future<void> _initPosthog(
     String apiKey,
     String companyName,

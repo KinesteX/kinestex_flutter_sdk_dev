@@ -9,12 +9,7 @@ class GenericWebView extends StatefulWidget {
       KinesteXWebViewController();
 
   static Future<void> warmup() async {
-    return controller.loadView(
-        url: "https://kinestex.vercel.app",
-        isLoading: ValueNotifier(false),
-        onMessageReceived: (message) {
-          KinesteXLogger.instance.info(message.data.toString());
-        });
+    return controller.warmup();
   }
 
   /// Dispose the WebView controller
@@ -73,8 +68,7 @@ class _GenericWebViewState extends State<GenericWebView> {
         oldWidget.apiKey != widget.apiKey ||
         oldWidget.companyName != widget.companyName ||
         oldWidget.userId != widget.userId ||
-        oldWidget.data != widget.data ||
-        oldWidget.updatedExercise != widget.updatedExercise;
+        oldWidget.data != widget.data;
 
     if (paramsChanged) {
       _logger.info('Parameters changed, reloading view');
@@ -108,6 +102,7 @@ class _GenericWebViewState extends State<GenericWebView> {
     // Use controller's current URL if available (warmup URL on first load)
     // Otherwise use widget's URL
     final initialUrl = GenericWebView.controller.currentUrl ?? widget.url;
+    final headlessWebview = GenericWebView.controller.headlessWebView;
 
     return PopScope(
       canPop: false,
@@ -124,6 +119,7 @@ class _GenericWebViewState extends State<GenericWebView> {
           Opacity(
             opacity: !GenericWebView.controller.isInitialized ? 0.0 : 1.0,
             child: InAppWebView(
+              headlessWebView: headlessWebview,
               initialUrlRequest: URLRequest(url: WebUri(initialUrl)),
               initialSettings: InAppWebViewSettings(
                 javaScriptEnabled: true,
@@ -155,19 +151,6 @@ class _GenericWebViewState extends State<GenericWebView> {
                     .onPermissionRequest(controller, request);
               },
             ),
-          ),
-          // Loading indicator
-          ValueListenableBuilder<bool>(
-            valueListenable: widget.isLoading,
-            builder: (context, isLoading, child) {
-              return isLoading
-                  ? Container(
-                      width: double.infinity,
-                      height: double.infinity,
-                      color: const Color(0xFF000000),
-                    )
-                  : const SizedBox.shrink();
-            },
           ),
         ],
       ),

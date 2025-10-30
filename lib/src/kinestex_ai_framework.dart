@@ -21,6 +21,10 @@ class KinesteXAIFramework {
     _credentials.set(apiKey, companyName, userId);
   }
 
+  static Future<void> dispose() async {
+    await _initializer.dispose();
+  }
+
   /// Creates the main KinesteX view with categorized workout plans
   static Widget createMainView({
     String? apiKey,

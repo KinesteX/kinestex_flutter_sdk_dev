@@ -18,6 +18,9 @@ class KinesteXWebViewController {
 
   final _logger = KinesteXLogger.instance;
 
+  // Defining our headlessWebView for initialization
+  HeadlessInAppWebView? _headlessWebView;
+
   // WebView state
   InAppWebViewController? _webViewController;
   bool _isInitialized = false;
@@ -42,6 +45,41 @@ class KinesteXWebViewController {
   // Getters
   bool get isInitialized => _isInitialized;
   String? get currentUrl => _currentUrl;
+  HeadlessInAppWebView? get headlessWebView => _headlessWebView;
+
+  Future<void> warmup() async {
+    if (_isInitialized) {
+      _logger.info('WebView already warmed up');
+      return;
+    }
+
+    _isInitialized = true;
+    _logger.info('Starting headless WebView warmup...');
+
+    _headlessWebView = HeadlessInAppWebView(
+      initialUrlRequest: URLRequest(url: WebUri(_warmupUrl)),
+      onWebViewCreated: (controller) {
+        _logger.info('Headless WebView created');
+        _webViewController = controller;
+
+        controller.addJavaScriptHandler(
+          handlerName: 'messageHandler',
+          callback: _handleMessage,
+        );
+      },
+      onLoadStop: (controller, url) async {
+        _logger.success('Warmup page fully loaded: $url');
+        _launchTimer?.cancel();
+        _retryCount = 0;
+      },
+      onReceivedError: (controller, request, error) {
+        _logger.error('Warmup error: ${error.description}');
+      },
+    );
+
+    await _headlessWebView?.run();
+    _logger.success('Headless WebView warmup running');
+  }
 
   Future<void> loadView({
     String? apiKey,
@@ -53,7 +91,8 @@ class KinesteXWebViewController {
     required ValueNotifier<bool> isLoading,
   }) async {
     if (!_isInitialized) {
-      _isInitialized = true;
+      _logger.error("WebView is not warmed up yet!");
+      throw Exception("WebView is not warmed up before usage!");
     }
 
     _logger.info('Loading view: $url');
@@ -273,6 +312,10 @@ class KinesteXWebViewController {
     _currentData = null;
     _onMessageReceived = null;
     _isLoading = null;
+
+    // Clear headlessWebView
+    await _headlessWebView?.dispose();
+    _headlessWebView = null;
 
     _logger.success('WebView controller disposed');
   }
