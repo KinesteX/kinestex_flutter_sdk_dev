@@ -1,2 +1,2 @@
-export 'models/index.dart';
-export 'kinestex_ai_framework.dart';
+export 'src/models/index.dart';
+export 'src/kinestex_ai_framework.dart';
