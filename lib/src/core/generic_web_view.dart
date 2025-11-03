@@ -8,8 +8,16 @@ class GenericWebView extends StatefulWidget {
   static final KinesteXWebViewController controller =
       KinesteXWebViewController();
 
-  static Future<void> warmup() async {
-    return controller.warmup();
+  static Future<void> warmup({
+    String? apiKey,
+    String? companyName,
+    String? userId,
+  }) async {
+    return controller.warmup(
+      apiKey: apiKey,
+      companyName: companyName,
+      userId: userId,
+    );
   }
 
   /// Dispose the WebView controller

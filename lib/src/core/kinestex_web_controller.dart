@@ -47,10 +47,23 @@ class KinesteXWebViewController {
   String? get currentUrl => _currentUrl;
   HeadlessInAppWebView? get headlessWebView => _headlessWebView;
 
-  Future<void> warmup() async {
+  Future<void> warmup({
+    String? apiKey,
+    String? companyName,
+    String? userId,
+  }) async {
     if (_isInitialized) {
       _logger.info('WebView already warmed up');
       return;
+    }
+
+    // Store credentials if provided during initialization
+    if (apiKey != null && companyName != null && userId != null) {
+      _currentApiKey = apiKey;
+      _currentCompanyName = companyName;
+      _currentUserId = userId;
+      _currentUrl = _warmupUrl;
+      _logger.info('Credentials stored during warmup');
     }
 
     _isInitialized = true;
@@ -146,7 +159,7 @@ class KinesteXWebViewController {
   /// Handle messages from WebView
   void _handleMessage(List<dynamic> args) {
     try {
-      if (args.isEmpty || _onMessageReceived == null) return;
+      if (args.isEmpty) return;
 
       final dynamic data = args[0];
       Map<String, dynamic> decodedData;
@@ -179,7 +192,12 @@ class KinesteXWebViewController {
         _loadInitialData();
       }
 
-      _onMessageReceived!(webViewMessage);
+      if (_onMessageReceived != null) {
+        _onMessageReceived!(webViewMessage);
+      } else {
+        _logger.info(
+            'Message received but callback not set: ${decodedData['type']}');
+      }
     } catch (e, stackTrace) {
       _logger.error('Error in messageHandler: $e');
       _logger.error('Stack trace: $stackTrace');
@@ -193,7 +211,12 @@ class KinesteXWebViewController {
         _currentCompanyName == null ||
         _currentUserId == null ||
         _currentUrl == null) {
-      _logger.error('Cannot load initial data - missing required state');
+      _logger.error('Cannot load initial data - missing required state:\n'
+          'controller: ${_webViewController != null}, '
+          'apiKey: ${_currentApiKey != null}, '
+          'company: ${_currentCompanyName != null}, '
+          'userId: ${_currentUserId != null}, '
+          'url: ${_currentUrl != null}');
       return;
     }
 

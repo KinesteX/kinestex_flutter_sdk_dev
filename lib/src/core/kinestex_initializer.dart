@@ -16,7 +16,11 @@ class KinesteXInitializer {
 
     try {
       _logger.info('Initializing SDK...');
-      await GenericWebView.warmup();
+      await GenericWebView.warmup(
+        apiKey: apiKey,
+        companyName: companyName,
+        userId: userId,
+      );
       _isInitialized = true;
       _logger.success('SDK initialized successfully');
     } catch (e) {
