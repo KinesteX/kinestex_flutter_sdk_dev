@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kinestex_sdk_flutter/src/api/api_service.dart';
 import 'package:kinestex_sdk_flutter/src/core/kinestex_credentials.dart';
 import 'package:kinestex_sdk_flutter/src/core/kinestex_initializer.dart';
 import 'package:kinestex_sdk_flutter/src/core/kinestex_logger.dart';
@@ -11,6 +12,18 @@ class KinesteXAIFramework {
   static final _initializer = KinesteXInitializer();
   static final _credentials = KinesteXCredentials();
   static final _logger = KinesteXLogger.instance;
+  static APIService? _apiService;
+
+  /// Get the API service instance for fetching workouts, plans, and exercises
+  ///
+  /// Throws an exception if initialize() has not been called yet
+  static APIService get apiService {
+    if (_apiService == null) {
+      throw Exception(
+          'KinesteX SDK not initialized. Call KinesteXAIFramework.initialize() first.');
+    }
+    return _apiService!;
+  }
 
   static Future<void> initialize({
     required String apiKey,
@@ -19,6 +32,13 @@ class KinesteXAIFramework {
   }) async {
     await _initializer.initialize(apiKey, companyName, userId);
     _credentials.set(apiKey, companyName, userId);
+
+    // Initialize API service
+    _apiService = APIService(
+      apiKey: apiKey,
+      companyName: companyName,
+    );
+    _logger.success('API Service initialized');
   }
 
   static Future<void> dispose() async {
