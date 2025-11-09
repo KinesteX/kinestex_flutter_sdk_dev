@@ -1,18 +1,22 @@
 enum PlanCategory { Cardio, WeightManagement, Strength, Rehabilitation, Custom }
+
 enum Gender { Male, Female, Unknown }
+
 enum Lifestyle { Sedentary, SlightlyActive, Active, VeryActive }
+
 enum AdminContentType { workout, plan, exercise }
 
 String segmentFor(AdminContentType type) {
-switch (type) {
-case AdminContentType.workout:
-return 'workouts';
-case AdminContentType.plan:
-return 'plans';
-case AdminContentType.exercise:
-return 'exercises';
+  switch (type) {
+    case AdminContentType.workout:
+      return 'workouts';
+    case AdminContentType.plan:
+      return 'plans';
+    case AdminContentType.exercise:
+      return 'exercises';
+  }
 }
-}
+
 String planCategoryString(PlanCategory category) {
   switch (category) {
     case PlanCategory.Cardio:
@@ -25,8 +29,6 @@ String planCategoryString(PlanCategory category) {
       return "Rehabilitation";
     case PlanCategory.Custom:
       return "Custom";
-    default:
-      return "";
   }
 }
 
@@ -37,8 +39,6 @@ String genderString(Gender gender) {
     case Gender.Female:
       return "Female";
     case Gender.Unknown:
-      return "Male";
-    default:
       return "Male";
   }
 }
@@ -53,8 +53,6 @@ String lifestyleString(Lifestyle lifestyle) {
       return "Active";
     case Lifestyle.VeryActive:
       return "Very Active";
-    default:
-      return "";
   }
 }
 
