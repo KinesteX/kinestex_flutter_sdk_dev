@@ -9,19 +9,15 @@ class KinesteXCredentials {
     _userId = userId;
   }
 
-  KinesteXCreds resolve(String? apiKey, String? companyName, String? userId) {
-    final resolvedApiKey = apiKey ?? _apiKey;
-    final resolvedCompanyName = companyName ?? _companyName;
-    final resolvedUserId = userId ?? _userId;
-
-    if ([resolvedApiKey, resolvedCompanyName, resolvedUserId].contains(null)) {
+  KinesteXCreds get credentials {
+    if (_apiKey == null || _companyName == null || _userId == null) {
       throw Exception('SDK: Missing credentials. Call initialize() first.');
     }
 
     return KinesteXCreds(
-      apiKey: resolvedApiKey!,
-      companyName: resolvedCompanyName!,
-      userId: resolvedUserId!,
+      apiKey: _apiKey!,
+      companyName: _companyName!,
+      userId: _userId!,
     );
   }
 }
