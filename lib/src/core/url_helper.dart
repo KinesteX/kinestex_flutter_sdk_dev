@@ -12,7 +12,7 @@ class UrlHelper {
   static final _logger = KinesteXLogger.instance;
 
   const UrlHelper({
-    this.baseUrl = 'https://kinestex.vercel.app',
+    this.baseUrl = 'https://ai.kinestex.com',
     this.adminUrl = 'https://admin.kinestex.com',
   });
 

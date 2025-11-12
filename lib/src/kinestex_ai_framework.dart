@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kinestex_sdk_flutter/src/api/api_service.dart';
 import 'package:kinestex_sdk_flutter/src/core/kinestex_credentials.dart';
 import 'package:kinestex_sdk_flutter/src/core/kinestex_initializer.dart';
 import 'package:kinestex_sdk_flutter/src/core/kinestex_logger.dart';
@@ -11,6 +12,18 @@ class KinesteXAIFramework {
   static final _initializer = KinesteXInitializer();
   static final _credentials = KinesteXCredentials();
   static final _logger = KinesteXLogger.instance;
+  static APIService? _apiService;
+
+  /// Get the API service instance for fetching workouts, plans, and exercises
+  ///
+  /// Throws an exception if initialize() has not been called yet
+  static APIService get apiService {
+    if (_apiService == null) {
+      throw Exception(
+          'KinesteX SDK not initialized. Call KinesteXAIFramework.initialize() first.');
+    }
+    return _apiService!;
+  }
 
   static Future<void> initialize({
     required String apiKey,
@@ -19,6 +32,13 @@ class KinesteXAIFramework {
   }) async {
     await _initializer.initialize(apiKey, companyName, userId);
     _credentials.set(apiKey, companyName, userId);
+
+    // Initialize API service
+    _apiService = APIService(
+      apiKey: apiKey,
+      companyName: companyName,
+    );
+    _logger.success('API Service initialized');
   }
 
   static Future<void> dispose() async {
@@ -27,9 +47,6 @@ class KinesteXAIFramework {
 
   /// Creates the main KinesteX view with categorized workout plans
   static Widget createMainView({
-    String? apiKey,
-    String? companyName,
-    String? userId,
     PlanCategory planCategory = PlanCategory.Cardio,
     UserDetails? user,
     Map<String, dynamic>? customParams,
@@ -37,7 +54,7 @@ class KinesteXAIFramework {
     required ValueNotifier<bool> isShowKinestex,
     required Function(WebViewMessage) onMessageReceived,
   }) {
-    final creds = _credentials.resolve(apiKey, companyName, userId);
+    final creds = _credentials.credentials;
     return KinesteXViewBuilder.build(
       apiKey: creds.apiKey,
       companyName: creds.companyName,
@@ -56,9 +73,6 @@ class KinesteXAIFramework {
 
   /// Creates a view for a specific workout plan
   static Widget createPlanView({
-    String? apiKey,
-    String? companyName,
-    String? userId,
     required String planName,
     UserDetails? user,
     Map<String, dynamic>? customParams,
@@ -66,7 +80,7 @@ class KinesteXAIFramework {
     required ValueNotifier<bool> isShowKinestex,
     required Function(WebViewMessage) onMessageReceived,
   }) {
-    final creds = _credentials.resolve(apiKey, companyName, userId);
+    final creds = _credentials.credentials;
 
     return KinesteXViewBuilder.build(
       apiKey: creds.apiKey,
@@ -83,9 +97,6 @@ class KinesteXAIFramework {
 
   /// Creates a view for a specific workout
   static Widget createWorkoutView({
-    String? apiKey,
-    String? companyName,
-    String? userId,
     required String workoutName,
     UserDetails? user,
     Map<String, dynamic>? customParams,
@@ -93,7 +104,7 @@ class KinesteXAIFramework {
     required ValueNotifier<bool> isLoading,
     required Function(WebViewMessage) onMessageReceived,
   }) {
-    final creds = _credentials.resolve(apiKey, companyName, userId);
+    final creds = _credentials.credentials;
 
     return KinesteXViewBuilder.build(
       apiKey: creds.apiKey,
@@ -110,9 +121,6 @@ class KinesteXAIFramework {
 
   /// Creates a view for AI experiences
   static Widget createExperienceView({
-    String? apiKey,
-    String? companyName,
-    String? userId,
     required String experience,
     UserDetails? user,
     Map<String, dynamic>? customParams,
@@ -120,7 +128,7 @@ class KinesteXAIFramework {
     required ValueNotifier<bool> isShowKinestex,
     required Function(WebViewMessage) onMessageReceived,
   }) {
-    final creds = _credentials.resolve(apiKey, companyName, userId);
+    final creds = _credentials.credentials;
 
     return KinesteXViewBuilder.build(
       apiKey: creds.apiKey,
@@ -137,16 +145,13 @@ class KinesteXAIFramework {
 
   /// Creates a personalized workout plan view
   static Widget createPersonalizedPlanView({
-    String? apiKey,
-    String? companyName,
-    String? userId,
     UserDetails? user,
     Map<String, dynamic>? customParams,
     required ValueNotifier<bool> isLoading,
     required ValueNotifier<bool> isShowKinestex,
     required Function(WebViewMessage) onMessageReceived,
   }) {
-    final creds = _credentials.resolve(apiKey, companyName, userId);
+    final creds = _credentials.credentials;
 
     return KinesteXViewBuilder.build(
       apiKey: creds.apiKey,
@@ -163,9 +168,6 @@ class KinesteXAIFramework {
 
   /// Creates a challenge view for specific exercises
   static Widget createChallengeView({
-    String? apiKey,
-    String? companyName,
-    String? userId,
     String exercise = "Squats",
     required int countdown,
     UserDetails? user,
@@ -175,7 +177,7 @@ class KinesteXAIFramework {
     required ValueNotifier<bool> isLoading,
     required Function(WebViewMessage) onMessageReceived,
   }) {
-    final creds = _credentials.resolve(apiKey, companyName, userId);
+    final creds = _credentials.credentials;
 
     return KinesteXViewBuilder.build(
       apiKey: creds.apiKey,
@@ -197,9 +199,6 @@ class KinesteXAIFramework {
 
   /// Creates a leaderboard view
   static Widget createLeaderboardView({
-    String? apiKey,
-    String? companyName,
-    String? userId,
     String exercise = "Squats",
     String username = "",
     Map<String, dynamic>? customParams,
@@ -207,7 +206,7 @@ class KinesteXAIFramework {
     required ValueNotifier<bool> isLoading,
     required Function(WebViewMessage) onMessageReceived,
   }) {
-    final creds = _credentials.resolve(apiKey, companyName, userId);
+    final creds = _credentials.credentials;
 
     return KinesteXViewBuilder.build(
       apiKey: creds.apiKey,
@@ -224,16 +223,13 @@ class KinesteXAIFramework {
 
   /// Creates a custom view
   static Widget createCustomView({
-    String? apiKey,
-    String? companyName,
-    String? userId,
     UserDetails? user,
     Map<String, dynamic>? customParams,
     required ValueNotifier<bool> isLoading,
     required ValueNotifier<bool> isShowKinestex,
     required Function(WebViewMessage) onMessageReceived,
   }) {
-    final creds = _credentials.resolve(apiKey, companyName, userId);
+    final creds = _credentials.credentials;
 
     return KinesteXViewBuilder.build(
       apiKey: creds.apiKey,
@@ -250,9 +246,6 @@ class KinesteXAIFramework {
 
   /// Creates a camera component for real-time exercise tracking
   static Widget createCameraComponent({
-    String? apiKey,
-    String? companyName,
-    String? userId,
     required List<String> exercises,
     required String currentExercise,
     UserDetails? user,
@@ -271,7 +264,7 @@ class KinesteXAIFramework {
       }
     }
 
-    final creds = _credentials.resolve(apiKey, companyName, userId);
+    final creds = _credentials.credentials;
 
     return KinesteXViewBuilder.build(
       apiKey: creds.apiKey,
@@ -293,9 +286,6 @@ class KinesteXAIFramework {
 
   /// Creates an admin workout editor view
   static Widget createAdminWorkoutEditor({
-    String? apiKey,
-    String? companyName,
-    String? userId,
     required String organization,
     Map<String, dynamic>? customParams,
     Map<String, dynamic>? customQueries,
@@ -313,7 +303,7 @@ class KinesteXAIFramework {
       return Container();
     }
 
-    final creds = _credentials.resolve(apiKey, companyName, userId);
+    final creds = _credentials.credentials;
 
     final url = _urlHelper.adminView(
       contentType: contentType,

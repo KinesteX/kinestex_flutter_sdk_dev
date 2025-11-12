@@ -24,7 +24,7 @@ class KinesteXWebViewController {
   // WebView state
   InAppWebViewController? _webViewController;
   bool _isInitialized = false;
-  static const String _warmupUrl = 'https://kinestex.vercel.app';
+  static const String _warmupUrl = 'https://ai.kinestex.com/warmup';
 
   // Navigation state
   String? _currentUrl;
@@ -32,6 +32,8 @@ class KinesteXWebViewController {
   String? _currentCompanyName;
   String? _currentUserId;
   Map<String, dynamic>? _currentData;
+  bool _isFirstViewLoad =
+      true; // Track if this is the first view load after warmup
 
   // Callbacks
   Function(WebViewMessage)? _onMessageReceived;
@@ -306,6 +308,21 @@ class KinesteXWebViewController {
       }
     } else {
       _logger.info('Page loaded: $loadedUrl');
+
+      // Clear navigation history on first view load to remove warmup URL
+      if (_isFirstViewLoad) {
+        _logger.info(
+            'First view loaded, clearing navigation history to remove warmup URL');
+        try {
+          // Clear the back/forward history so warmup URL is not accessible
+          await controller.clearHistory();
+          _isFirstViewLoad = false;
+          _logger.success(
+              'Navigation history cleared - warmup URL removed from stack');
+        } catch (e) {
+          _logger.error('Failed to clear navigation history: $e');
+        }
+      }
     }
   }
 
@@ -335,6 +352,7 @@ class KinesteXWebViewController {
     _currentData = null;
     _onMessageReceived = null;
     _isLoading = null;
+    _isFirstViewLoad = true; // Reset for next initialization
 
     // Clear headlessWebView
     await _headlessWebView?.dispose();
