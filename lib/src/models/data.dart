@@ -32,6 +32,24 @@ String planCategoryString(PlanCategory category) {
   }
 }
 
+PlanCategory getPlanCategoryFromString(String category) {
+  switch (category.toLowerCase()) {
+    case "cardio":
+      return PlanCategory.Cardio;
+    case "weightmanagement":
+    case "weight management":
+      return PlanCategory.WeightManagement;
+    case "strength":
+      return PlanCategory.Strength;
+    case "rehabilitation":
+      return PlanCategory.Rehabilitation;
+    case "custom":
+      return PlanCategory.Custom;
+    default:
+      return PlanCategory.Cardio;
+  }
+}
+
 String genderString(Gender gender) {
   switch (gender) {
     case Gender.Male:
