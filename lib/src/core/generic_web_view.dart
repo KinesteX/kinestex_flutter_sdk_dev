@@ -114,11 +114,21 @@ class _GenericWebViewState extends State<GenericWebView> {
 
     return PopScope(
       canPop: false,
-      onPopInvokedWithResult: (didPop, dynamic) async {
+      onPopInvokedWithResult: (didPop, dynamicType) async {
         final shouldPop = await GenericWebView.controller.onBackPressed();
         if (!shouldPop) {
           return; // WebView handled the back press
         }
+
+        // Send ExitKinestex message when user wants to exit
+        final Map<String, dynamic> exitKinestexData = {
+          'type': 'exit_kinestex',
+          'timestamp': DateTime.now().toIso8601String(),
+        };
+        final WebViewMessage exitKinestexMessage =
+            ExitKinestex(exitKinestexData);
+        widget.onMessageReceived(exitKinestexMessage);
+
         widget.showKinesteX.value = false;
       },
       child: Stack(
