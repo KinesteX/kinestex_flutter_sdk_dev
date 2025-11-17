@@ -284,6 +284,41 @@ class KinesteXAIFramework {
     );
   }
 
+  /// Creates a view for custom workouts
+  static Widget createCustomWorkoutView({
+    required List<WorkoutSequenceExercise> customWorkouts,
+    UserDetails? user,
+    Map<String, dynamic>? customParams,
+    required ValueNotifier<bool> isShowKinestex,
+    required ValueNotifier<bool> isLoading,
+    required Function(WebViewMessage) onMessageReceived,
+  }) {
+    final creds = _credentials.credentials;
+
+    // Normalize and validate custom workout exercises
+    final normalized = normalizeWorkoutExercises(customWorkouts);
+    if (normalized == null) {
+      _logger.error(
+          'Validation Error: No valid exercises provided for custom workout');
+      return Container();
+    }
+
+    return KinesteXViewBuilder.build(
+      apiKey: creds.apiKey,
+      companyName: creds.companyName,
+      userId: creds.userId,
+      url: _urlHelper.customWorkout,
+      data: {
+        'customWorkoutExercises': normalized,
+      },
+      user: user,
+      customParams: customParams,
+      isLoading: isLoading,
+      showKinesteX: isShowKinestex,
+      onMessageReceived: onMessageReceived,
+    );
+  }
+
   /// Creates an admin workout editor view
   static Widget createAdminWorkoutEditor({
     required String organization,

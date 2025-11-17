@@ -232,12 +232,15 @@ class KinesteXWebViewController {
         'userId': '$_currentUserId',
         'exercises': ${jsonEncode(_currentData?['exercises'] ?? [])},
         'currentExercise': '${_currentData?['currentExercise'] ?? ''}',
+        'customWorkoutExercises': ${jsonEncode(_currentData?['customWorkoutExercises'] ?? [])},
         ${_mapToJson(_currentData ?? {})}
       };
       window.postMessage(message, '$_currentUrl');
     }
     setTimeout(sendMessage, 100);
   """;
+
+    _logger.info("Script: $script");
 
     try {
       await _webViewController!.evaluateJavascript(source: script);
@@ -364,7 +367,10 @@ class KinesteXWebViewController {
   /// Convert map to JSON string for JavaScript
   String _mapToJson(Map<String, dynamic> map) {
     return map.entries
-        .where((e) => e.key != 'exercises' && e.key != 'currentExercise')
+        .where((e) =>
+            e.key != 'exercises' &&
+            e.key != 'currentExercise' &&
+            e.key != 'customWorkoutExercises')
         .map((e) => "'${e.key}': ${jsonEncode(e.value)}")
         .join(', ');
   }
