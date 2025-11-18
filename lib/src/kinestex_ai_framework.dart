@@ -5,6 +5,7 @@ import 'package:kinestex_sdk_flutter/src/core/kinestex_initializer.dart';
 import 'package:kinestex_sdk_flutter/src/core/kinestex_logger.dart';
 import 'core/kinestex_view_builder.dart';
 import 'core/url_helper.dart';
+import 'core/generic_web_view.dart';
 import '../kinestex_sdk.dart';
 
 class KinesteXAIFramework {
@@ -361,5 +362,13 @@ class KinesteXAIFramework {
       showKinesteX: isShowKinestex,
       onMessageReceived: onMessageReceived,
     );
+  }
+
+  /// Send a custom action to the WebView
+  ///
+  /// Used for controlling workout flow:
+  /// - Start: `KinesteXAIFramework.sendAction("workout_activity_action", "start")`
+  static Future<void> sendAction(String action, String value) async {
+    await GenericWebView.controller.sendAction(action, value);
   }
 }
