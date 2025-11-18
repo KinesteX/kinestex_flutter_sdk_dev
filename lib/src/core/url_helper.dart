@@ -26,6 +26,9 @@ class UrlHelper {
   String workoutView(String workoutName) =>
       '$baseUrl/workout/${_encodePath(workoutName)}';
 
+  /// Custom Workout view
+  String get customWorkout => "$baseUrl/custom-workout";
+
   /// Experience view URL with encoded experience name
   String experienceView(String experience) =>
       '$baseUrl/experiences/${_encodePath(experience)}';

@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:kinestex_sdk_flutter/src/core/kinestex_logger.dart';
-import '../models/web_view_message.dart';
+import '../models/index.dart';
 
 /// Singleton controller managing a single WebView instance for optimal performance
 ///
@@ -232,12 +232,15 @@ class KinesteXWebViewController {
         'userId': '$_currentUserId',
         'exercises': ${jsonEncode(_currentData?['exercises'] ?? [])},
         'currentExercise': '${_currentData?['currentExercise'] ?? ''}',
+        'customWorkoutExercises': ${jsonEncode(_currentData?['customWorkoutExercises'] ?? [])},
         ${_mapToJson(_currentData ?? {})}
       };
       window.postMessage(message, '$_currentUrl');
     }
     setTimeout(sendMessage, 100);
   """;
+
+    _logger.info("Script: $script");
 
     try {
       await _webViewController!.evaluateJavascript(source: script);
@@ -275,6 +278,54 @@ class KinesteXWebViewController {
       await _webViewController!.evaluateJavascript(source: script);
     } catch (e) {
       _logger.error('Failed to update exercise', e);
+    }
+  }
+
+  /// Send a custom action message to the WebView
+  ///
+  /// Used for triggering specific actions like starting workouts,
+  /// pausing, resuming, etc.
+  ///
+  /// Example: sendAction("workout_activity_action", "start")
+  Future<void> sendAction(String action, String value) async {
+    if (_webViewController == null || _currentUrl == null) {
+      _logger.error('Cannot send action - WebView not ready');
+      return;
+    }
+
+    // Validate action
+    if (action.isEmpty) {
+      _logger.error('KinesteX SDK: Action type is required');
+      return;
+    }
+
+
+    // Validate value
+    if (value.isEmpty) {
+      _logger.error('KinesteX SDK: Action value is required');
+      return;
+    }
+
+
+    // Create message payload
+    final messagePayload = {
+      action: value,
+    };
+
+    final String script = '''
+      (function() {
+        const message = ${jsonEncode(messagePayload)};
+        window.postMessage(message, '$_currentUrl');
+      })();
+    ''';
+
+    _logger.info('Sending action: $action = $value');
+
+    try {
+      await _webViewController!.evaluateJavascript(source: script);
+      _logger.info('Action sent successfully');
+    } catch (e) {
+      _logger.error('Failed to send action', e);
     }
   }
 
@@ -364,7 +415,10 @@ class KinesteXWebViewController {
   /// Convert map to JSON string for JavaScript
   String _mapToJson(Map<String, dynamic> map) {
     return map.entries
-        .where((e) => e.key != 'exercises' && e.key != 'currentExercise')
+        .where((e) =>
+            e.key != 'exercises' &&
+            e.key != 'currentExercise' &&
+            e.key != 'customWorkoutExercises')
         .map((e) => "'${e.key}': ${jsonEncode(e.value)}")
         .join(', ');
   }

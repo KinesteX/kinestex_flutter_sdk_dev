@@ -5,6 +5,7 @@ import 'package:kinestex_sdk_flutter/src/core/kinestex_initializer.dart';
 import 'package:kinestex_sdk_flutter/src/core/kinestex_logger.dart';
 import 'core/kinestex_view_builder.dart';
 import 'core/url_helper.dart';
+import 'core/generic_web_view.dart';
 import '../kinestex_sdk.dart';
 
 class KinesteXAIFramework {
@@ -284,6 +285,41 @@ class KinesteXAIFramework {
     );
   }
 
+  /// Creates a view for custom workouts
+  static Widget createCustomWorkoutView({
+    required List<WorkoutSequenceExercise> customWorkouts,
+    UserDetails? user,
+    Map<String, dynamic>? customParams,
+    required ValueNotifier<bool> isShowKinestex,
+    required ValueNotifier<bool> isLoading,
+    required Function(WebViewMessage) onMessageReceived,
+  }) {
+    final creds = _credentials.credentials;
+
+    // Normalize and validate custom workout exercises
+    final normalized = normalizeWorkoutExercises(customWorkouts);
+    if (normalized == null) {
+      _logger.error(
+          'Validation Error: No valid exercises provided for custom workout');
+      return Container();
+    }
+
+    return KinesteXViewBuilder.build(
+      apiKey: creds.apiKey,
+      companyName: creds.companyName,
+      userId: creds.userId,
+      url: _urlHelper.customWorkout,
+      data: {
+        'customWorkoutExercises': normalized,
+      },
+      user: user,
+      customParams: customParams,
+      isLoading: isLoading,
+      showKinesteX: isShowKinestex,
+      onMessageReceived: onMessageReceived,
+    );
+  }
+
   /// Creates an admin workout editor view
   static Widget createAdminWorkoutEditor({
     required String organization,
@@ -326,5 +362,13 @@ class KinesteXAIFramework {
       showKinesteX: isShowKinestex,
       onMessageReceived: onMessageReceived,
     );
+  }
+
+  /// Send a custom action to the WebView
+  ///
+  /// Used for controlling workout flow:
+  /// - Start: `KinesteXAIFramework.sendAction("workout_activity_action", "start")`
+  static Future<void> sendAction(String action, String value) async {
+    await GenericWebView.controller.sendAction(action, value);
   }
 }
