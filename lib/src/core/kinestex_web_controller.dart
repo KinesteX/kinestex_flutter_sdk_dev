@@ -73,6 +73,16 @@ class KinesteXWebViewController {
 
     _headlessWebView = HeadlessInAppWebView(
       initialUrlRequest: URLRequest(url: WebUri(_warmupUrl)),
+      initialSettings: InAppWebViewSettings(
+        javaScriptEnabled: true,
+        allowsAirPlayForMediaPlayback: true,
+        allowsInlineMediaPlayback: true,
+        allowsBackForwardNavigationGestures: true,
+        mediaPlaybackRequiresUserGesture: false,
+        transparentBackground: true,
+        verticalScrollBarEnabled: false,
+        horizontalScrollBarEnabled: false,
+      ),
       onWebViewCreated: (controller) {
         _logger.info('Headless WebView created');
         _webViewController = controller;
@@ -299,13 +309,11 @@ class KinesteXWebViewController {
       return;
     }
 
-
     // Validate value
     if (value.isEmpty) {
       _logger.error('KinesteX SDK: Action value is required');
       return;
     }
-
 
     // Create message payload
     final messagePayload = {
