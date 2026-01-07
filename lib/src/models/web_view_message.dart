@@ -20,6 +20,8 @@ abstract class WebViewMessage {
         return ExerciseCompleted(json);
       case 'exit_kinestex':
         return ExitKinestex(json);
+      case 'exit_leaderboard':
+        return ExitLeaderboard(json);
       case 'workout_opened':
         return WorkoutOpened(json);
       case 'workout_started':
@@ -64,6 +66,10 @@ class ExerciseCompleted extends WebViewMessage {
 
 class ExitKinestex extends WebViewMessage {
   ExitKinestex(Map<String, dynamic> data) : super(data);
+}
+
+class ExitLeaderboard extends WebViewMessage {
+  ExitLeaderboard(Map<String, dynamic> data) : super(data);
 }
 
 class WorkoutOpened extends WebViewMessage {

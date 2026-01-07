@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:kinestex_sdk_flutter/src/core/kinestex_logger.dart';
@@ -373,8 +374,13 @@ class KinesteXWebViewController {
         _logger.info(
             'First view loaded, clearing navigation history to remove warmup URL');
         try {
-          // Clear the back/forward history so warmup URL is not accessible
-          await controller.clearHistory();
+          if (Platform.isIOS) {
+            // On iOS, clearHistory() doesn't work, so disable gestures initially
+            await _updateGestureState(controller);
+          } else {
+            // On Android, clearHistory() works
+            await controller.clearHistory();
+          }
           _isFirstViewLoad = false;
           _logger.success(
               'Navigation history cleared - warmup URL removed from stack');
@@ -382,6 +388,37 @@ class KinesteXWebViewController {
           _logger.error('Failed to clear navigation history: $e');
         }
       }
+    }
+  }
+
+  Future<void> _updateGestureState(InAppWebViewController controller) async {
+    try {
+      final webHistory = await controller.getCopyBackForwardList();
+      bool shouldDisableGestures = false;
+
+      // Check if going back would lead to warmup URL
+      if (webHistory != null &&
+          webHistory.list != null &&
+          webHistory.currentIndex != null) {
+        final currentIndex = webHistory.currentIndex!;
+        if (currentIndex > 0) {
+          final previousItem = webHistory.list![currentIndex - 1];
+          if (previousItem.url?.toString() == _warmupUrl) {
+            shouldDisableGestures = true;
+          }
+        }
+      }
+
+      await controller.setSettings(
+        settings: InAppWebViewSettings(
+          allowsBackForwardNavigationGestures: !shouldDisableGestures,
+        ),
+      );
+
+      _logger.info(
+          'iOS: Swipe gestures ${shouldDisableGestures ? "disabled" : "enabled"}');
+    } catch (e) {
+      _logger.error('iOS: Failed to update gesture state: $e');
     }
   }
 
