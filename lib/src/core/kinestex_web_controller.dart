@@ -1,16 +1,15 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:kinestex_sdk_flutter/src/core/kinestex_logger.dart';
 import '../models/index.dart';
 
-/// Singleton controller managing a single WebView instance for optimal performance
+/// Singleton controller managing WebView lifecycle for optimal performance
 ///
-/// This ensures only ONE WebView exists at a time, preventing memory leaks
-/// when multiple views are created. URLs are changed dynamically instead of
-/// creating new WebView instances.
+/// Uses a headless WebView for warmup (engine initialization and resource caching),
+/// then creates fresh InAppWebView instances with NO navigation history.
+/// This prevents the iOS swipe-back issue while maintaining warmup benefits.
 class KinesteXWebViewController {
   static final KinesteXWebViewController _instance =
       KinesteXWebViewController._internal();
@@ -33,8 +32,6 @@ class KinesteXWebViewController {
   String? _currentCompanyName;
   String? _currentUserId;
   Map<String, dynamic>? _currentData;
-  bool _isFirstViewLoad =
-      true; // Track if this is the first view load after warmup
 
   // Callbacks
   Function(WebViewMessage)? _onMessageReceived;
@@ -358,68 +355,7 @@ class KinesteXWebViewController {
   /// Handle load stop (page finished loading)
   void onLoadStop(InAppWebViewController controller, WebUri? url) async {
     final loadedUrl = url?.toString();
-
-    // If this was the warmup load, mark it as complete
-    if (loadedUrl == _warmupUrl) {
-      // If we have a different target URL, navigate to it
-      if (_currentUrl != null && _currentUrl != _warmupUrl) {
-        _logger.info('Navigating to target URL: $_currentUrl');
-        await _navigateToUrl(_currentUrl!);
-      }
-    } else {
-      _logger.info('Page loaded: $loadedUrl');
-
-      // Clear navigation history on first view load to remove warmup URL
-      if (_isFirstViewLoad) {
-        _logger.info(
-            'First view loaded, clearing navigation history to remove warmup URL');
-        try {
-          if (Platform.isIOS) {
-            // On iOS, clearHistory() doesn't work, so disable gestures initially
-            await _updateGestureState(controller);
-          } else {
-            // On Android, clearHistory() works
-            await controller.clearHistory();
-          }
-          _isFirstViewLoad = false;
-          _logger.success(
-              'Navigation history cleared - warmup URL removed from stack');
-        } catch (e) {
-          _logger.error('Failed to clear navigation history: $e');
-        }
-      }
-    }
-  }
-
-  Future<void> _updateGestureState(InAppWebViewController controller) async {
-    try {
-      final webHistory = await controller.getCopyBackForwardList();
-      bool shouldDisableGestures = false;
-
-      // Check if going back would lead to warmup URL
-      if (webHistory != null &&
-          webHistory.list != null &&
-          webHistory.currentIndex != null) {
-        final currentIndex = webHistory.currentIndex!;
-        if (currentIndex > 0) {
-          final previousItem = webHistory.list![currentIndex - 1];
-          if (previousItem.url?.toString() == _warmupUrl) {
-            shouldDisableGestures = true;
-          }
-        }
-      }
-
-      await controller.setSettings(
-        settings: InAppWebViewSettings(
-          allowsBackForwardNavigationGestures: !shouldDisableGestures,
-        ),
-      );
-
-      _logger.info(
-          'iOS: Swipe gestures ${shouldDisableGestures ? "disabled" : "enabled"}');
-    } catch (e) {
-      _logger.error('iOS: Failed to update gesture state: $e');
-    }
+    _logger.info('Page loaded: $loadedUrl');
   }
 
   /// Handle permission requests
@@ -448,7 +384,6 @@ class KinesteXWebViewController {
     _currentData = null;
     _onMessageReceived = null;
     _isLoading = null;
-    _isFirstViewLoad = true; // Reset for next initialization
 
     // Clear headlessWebView
     await _headlessWebView?.dispose();

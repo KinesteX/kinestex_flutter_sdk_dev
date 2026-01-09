@@ -107,10 +107,10 @@ class _GenericWebViewState extends State<GenericWebView> {
 
   @override
   Widget build(BuildContext context) {
-    // Use controller's current URL if available (warmup URL on first load)
-    // Otherwise use widget's URL
-    final initialUrl = GenericWebView.controller.currentUrl ?? widget.url;
-    final headlessWebview = GenericWebView.controller.headlessWebView;
+    // Load the actual URL directly (NOT the warmup URL)
+    // This creates a fresh WebView instance with NO navigation history
+    // The warmup benefits are preserved (engine init + cached resources)
+    final initialUrl = widget.url;
 
     return PopScope(
       canPop: false,
@@ -137,7 +137,6 @@ class _GenericWebViewState extends State<GenericWebView> {
           Opacity(
             opacity: !GenericWebView.controller.isInitialized ? 0.0 : 1.0,
             child: InAppWebView(
-              headlessWebView: headlessWebview,
               initialUrlRequest: URLRequest(url: WebUri(initialUrl)),
               initialSettings: InAppWebViewSettings(
                 javaScriptEnabled: true,
