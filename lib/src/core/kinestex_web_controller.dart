@@ -5,11 +5,11 @@ import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:kinestex_sdk_flutter/src/core/kinestex_logger.dart';
 import '../models/index.dart';
 
-/// Singleton controller managing a single WebView instance for optimal performance
+/// Singleton controller managing WebView lifecycle for optimal performance
 ///
-/// This ensures only ONE WebView exists at a time, preventing memory leaks
-/// when multiple views are created. URLs are changed dynamically instead of
-/// creating new WebView instances.
+/// Uses a headless WebView for warmup (engine initialization and resource caching),
+/// then creates fresh InAppWebView instances with NO navigation history.
+/// This prevents the iOS swipe-back issue while maintaining warmup benefits.
 class KinesteXWebViewController {
   static final KinesteXWebViewController _instance =
       KinesteXWebViewController._internal();
@@ -32,8 +32,6 @@ class KinesteXWebViewController {
   String? _currentCompanyName;
   String? _currentUserId;
   Map<String, dynamic>? _currentData;
-  bool _isFirstViewLoad =
-      true; // Track if this is the first view load after warmup
 
   // Callbacks
   Function(WebViewMessage)? _onMessageReceived;
@@ -357,32 +355,7 @@ class KinesteXWebViewController {
   /// Handle load stop (page finished loading)
   void onLoadStop(InAppWebViewController controller, WebUri? url) async {
     final loadedUrl = url?.toString();
-
-    // If this was the warmup load, mark it as complete
-    if (loadedUrl == _warmupUrl) {
-      // If we have a different target URL, navigate to it
-      if (_currentUrl != null && _currentUrl != _warmupUrl) {
-        _logger.info('Navigating to target URL: $_currentUrl');
-        await _navigateToUrl(_currentUrl!);
-      }
-    } else {
-      _logger.info('Page loaded: $loadedUrl');
-
-      // Clear navigation history on first view load to remove warmup URL
-      if (_isFirstViewLoad) {
-        _logger.info(
-            'First view loaded, clearing navigation history to remove warmup URL');
-        try {
-          // Clear the back/forward history so warmup URL is not accessible
-          await controller.clearHistory();
-          _isFirstViewLoad = false;
-          _logger.success(
-              'Navigation history cleared - warmup URL removed from stack');
-        } catch (e) {
-          _logger.error('Failed to clear navigation history: $e');
-        }
-      }
-    }
+    _logger.info('Page loaded: $loadedUrl');
   }
 
   /// Handle permission requests
@@ -411,7 +384,6 @@ class KinesteXWebViewController {
     _currentData = null;
     _onMessageReceived = null;
     _isLoading = null;
-    _isFirstViewLoad = true; // Reset for next initialization
 
     // Clear headlessWebView
     await _headlessWebView?.dispose();
