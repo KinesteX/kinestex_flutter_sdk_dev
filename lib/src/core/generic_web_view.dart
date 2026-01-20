@@ -107,9 +107,6 @@ class _GenericWebViewState extends State<GenericWebView> {
 
   @override
   Widget build(BuildContext context) {
-    // Load the actual URL directly (NOT the warmup URL)
-    // This creates a fresh WebView instance with NO navigation history
-    // The warmup benefits are preserved (engine init + cached resources)
     final initialUrl = widget.url;
 
     return PopScope(
@@ -117,10 +114,9 @@ class _GenericWebViewState extends State<GenericWebView> {
       onPopInvokedWithResult: (didPop, dynamicType) async {
         final shouldPop = await GenericWebView.controller.onBackPressed();
         if (!shouldPop) {
-          return; // WebView handled the back press
+          return;
         }
 
-        // Send ExitKinestex message when user wants to exit
         final Map<String, dynamic> exitKinestexData = {
           'type': 'exit_kinestex',
           'timestamp': DateTime.now().toIso8601String(),
@@ -133,7 +129,6 @@ class _GenericWebViewState extends State<GenericWebView> {
       },
       child: Stack(
         children: [
-          // Wrap WebView with Opacity - invisible during warmup, visible after
           Opacity(
             opacity: !GenericWebView.controller.isInitialized ? 0.0 : 1.0,
             child: InAppWebView(
@@ -162,6 +157,21 @@ class _GenericWebViewState extends State<GenericWebView> {
               },
               onLoadStop: (controller, url) {
                 GenericWebView.controller.onLoadStop(controller, url);
+                // Fix dvh viewport height issue by injecting correct dimensions
+                final mediaQuery = MediaQuery.of(context);
+                final height = mediaQuery.size.height - mediaQuery.padding.top - mediaQuery.padding.bottom;
+                final width = mediaQuery.size.width;
+                controller.evaluateJavascript(source: '''
+                  (function() {
+                    var h = ${height.toInt()};
+                    var w = ${width.toInt()};
+                    document.documentElement.style.setProperty('--viewport-height', h + 'px');
+                    document.documentElement.style.setProperty('--vh', (h * 0.01) + 'px');
+                    document.documentElement.style.height = h + 'px';
+                    document.body.style.height = h + 'px';
+                    window.dispatchEvent(new Event('resize'));
+                  })();
+                ''');
               },
               onPermissionRequest: (controller, request) async {
                 return GenericWebView.controller
