@@ -112,8 +112,13 @@ class _GenericWebViewState extends State<GenericWebView> {
       url: widget.url,
       data: widget.data,
       onMessageReceived: (message) {
-        if (message is KinestexLaunched) {
-          _showOverlay.value = false;
+        if (message is KinestexLoaded) {
+          Future.delayed(
+            const Duration(milliseconds: 200),
+            () {
+              _showOverlay.value = false;
+            },
+          );
         }
         widget.onMessageReceived(message);
       },

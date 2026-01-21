@@ -23,10 +23,9 @@ class KinesteXViewBuilder {
       return Container();
     }
 
-    // Step 2: Build final data map
+    // Step 2: Build final data map (style is now passed via URL query params)
     final finalData = Map<String, dynamic>.from(data);
     _addUserDetails(finalData, user);
-    _addCustomStyle(finalData, style);
     _mergeCustomParams(finalData, customParams);
 
     // Step 3: Determine overlay color from customParams
@@ -89,39 +88,6 @@ class KinesteXViewBuilder {
       'gender': genderString(user.gender),
       'lifestyle': lifestyleString(user.lifestyle),
     });
-  }
-
-  static void _addCustomStyle(
-    Map<String, dynamic> data,
-    IStyle? style,
-  ) {
-    final logger = KinesteXLogger.instance;
-
-    if (style == null) return;
-
-    // data["style"] = style.toJson();
-
-    for (final entry in style.toJson().entries) {
-      final key = entry.key;
-      final value = entry.value;
-
-      // Validate key
-      if (containsDisallowedCharacters(key)) {
-        logger.error(
-            'Custom parameter key "$key" contains disallowed characters');
-        continue;
-      }
-
-      // Validate string values
-      if (value is String && containsDisallowedCharacters(value)) {
-        logger.error(
-            'Custom parameter "$key" value contains disallowed characters');
-        continue;
-      }
-
-      // Add valid parameter
-      data[key] = value;
-    }
   }
 
   /// Merges custom parameters into data map with validation

@@ -16,39 +16,75 @@ class UrlHelper {
     this.adminUrl = 'https://admin.kinestex.com',
   });
 
+  /// Builds query string from IStyle (only non-null fields)
+  String _buildStyleQuery(IStyle? style) {
+    if (style == null) return '';
+
+    final params = <String>[];
+    params.add('style=${Uri.encodeComponent(style.style)}');
+    if (style.themeName != null) {
+      params.add('themeName=${Uri.encodeComponent(style.themeName!)}');
+    }
+    if (style.loadingStickmanColor != null) {
+      params.add(
+          'loadingStickmanColor=${Uri.encodeComponent(style.loadingStickmanColor!)}');
+    }
+    if (style.loadingBackgroundColor != null) {
+      params.add(
+          'loadingBackgroundColor=${Uri.encodeComponent(style.loadingBackgroundColor!)}');
+    }
+    if (style.loadingTextColor != null) {
+      params.add(
+          'loadingTextColor=${Uri.encodeComponent(style.loadingTextColor!)}');
+    }
+
+    return params.isEmpty ? '' : params.join('&');
+  }
+
+  /// Appends style query to URL
+  String _appendStyleQuery(String url, IStyle? style) {
+    final query = _buildStyleQuery(style);
+    if (query.isEmpty) return url;
+    return url.contains('?') ? '$url&$query' : '$url?$query';
+  }
+
   /// Main view URL
-  String get mainView => baseUrl;
+  String mainView({IStyle? style}) => _appendStyleQuery(baseUrl, style);
 
   /// Plan view URL with encoded plan name
-  String planView(String planName) => '$baseUrl/plan/${_encodePath(planName)}';
+  String planView(String planName, {IStyle? style}) =>
+      _appendStyleQuery('$baseUrl/plan/${_encodePath(planName)}', style);
 
   /// Workout view URL with encoded workout name
-  String workoutView(String workoutName) =>
-      '$baseUrl/workout/${_encodePath(workoutName)}';
+  String workoutView(String workoutName, {IStyle? style}) =>
+      _appendStyleQuery('$baseUrl/workout/${_encodePath(workoutName)}', style);
 
   /// Custom Workout view
-  String get customWorkout => "$baseUrl/custom-workout";
+  String customWorkout({IStyle? style}) =>
+      _appendStyleQuery('$baseUrl/custom-workout', style);
 
   /// Experience view URL with encoded experience name
-  String experienceView(String experience) =>
-      '$baseUrl/experiences/${_encodePath(experience)}';
+  String experienceView(String experience, {IStyle? style}) =>
+      _appendStyleQuery('$baseUrl/experiences/${_encodePath(experience)}', style);
 
   /// Personalized plan view URL
-  String get personalizedPlanView => '$baseUrl/personalized-plan';
+  String personalizedPlanView({IStyle? style}) =>
+      _appendStyleQuery('$baseUrl/personalized-plan', style);
 
   /// Challenge view URL
-  String get challengeView => '$baseUrl/challenge';
+  String challengeView({IStyle? style}) =>
+      _appendStyleQuery('$baseUrl/challenge', style);
 
   /// Leaderboard view URL with optional username
-  String leaderboardView(String username) {
-    if (username.isEmpty) {
-      return '$baseUrl/leaderboard';
-    }
-    return '$baseUrl/leaderboard?username=${_encodePath(username)}';
+  String leaderboardView(String username, {IStyle? style}) {
+    final base =
+        username.isEmpty ? '$baseUrl/leaderboard' : '$baseUrl/leaderboard?username=${_encodePath(username)}';
+    return _appendStyleQuery(base, style);
   }
 
   /// Camera view URL
-  String get cameraView => '$baseUrl/camera';
+  String cameraView({IStyle? style}) =>
+      _appendStyleQuery('$baseUrl/camera', style);
 
   /// Admin view URL with complex parameters
   String adminView({
