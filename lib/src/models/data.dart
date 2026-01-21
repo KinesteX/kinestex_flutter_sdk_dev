@@ -97,6 +97,40 @@ class UserDetails {
   });
 }
 
+class IStyle {
+  final String style;
+  final String? themeName;
+  final String? loadingStickmanColor;
+  final String? loadingBackgroundColor;
+  final String? loadingTextColor;
+
+  IStyle({
+    this.style = 'dark',
+    this.themeName,
+    this.loadingStickmanColor,
+    this.loadingBackgroundColor,
+    this.loadingTextColor,
+  });
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = {};
+
+    data['style'] = style;
+    if (themeName != null) data['themeName'] = themeName;
+    if (loadingStickmanColor != null) {
+      data['loadingStickmanColor'] = loadingStickmanColor;
+    }
+    if (loadingBackgroundColor != null) {
+      data['loadingBackgroundColor'] = loadingBackgroundColor;
+    }
+    if (loadingTextColor != null) {
+      data['loadingTextColor'] = loadingTextColor;
+    }
+
+    return data;
+  }
+}
+
 class WorkoutSequenceExercise {
   final String exerciseId;
   final int?
@@ -158,7 +192,8 @@ class WorkoutSequenceExercise {
 
   factory WorkoutSequenceExercise.fromJson(String source) =>
       WorkoutSequenceExercise.fromMap(
-          json.decode(source) as Map<String, dynamic>);
+        json.decode(source) as Map<String, dynamic>,
+      );
 
   @override
   bool operator ==(Object other) {
@@ -178,7 +213,8 @@ class WorkoutSequenceExercise {
 /// Returns null if the list is empty or all exercises are invalid.
 /// Filters out exercises that fail validation.
 List<Map<String, dynamic>>? normalizeWorkoutExercises(
-    List<WorkoutSequenceExercise>? exercises) {
+  List<WorkoutSequenceExercise>? exercises,
+) {
   if (exercises == null || exercises.isEmpty) {
     return null;
   }

@@ -9,6 +9,7 @@ class KinesteXViewBuilder {
     required String companyName,
     required String userId,
     required String url,
+    IStyle? style,
     Map<String, dynamic> data = const {},
     UserDetails? user,
     Map<String, dynamic>? customParams,
@@ -25,11 +26,12 @@ class KinesteXViewBuilder {
     // Step 2: Build final data map
     final finalData = Map<String, dynamic>.from(data);
     _addUserDetails(finalData, user);
+    _addCustomStyle(finalData, style);
     _mergeCustomParams(finalData, customParams);
 
     // Step 3: Determine overlay color from customParams
-    final overlayColor = customParams?['style'] == 'light'
-        ? Colors.white
+    final overlayColor = (style?.loadingBackgroundColor?.isNotEmpty ?? false)
+        ? colorFromHex(style!.loadingBackgroundColor!)
         : Colors.black;
 
     // Step 4: Create and return the WebView widget
@@ -89,6 +91,39 @@ class KinesteXViewBuilder {
     });
   }
 
+  static void _addCustomStyle(
+    Map<String, dynamic> data,
+    IStyle? style,
+  ) {
+    final logger = KinesteXLogger.instance;
+
+    if (style == null) return;
+
+    // data["style"] = style.toJson();
+
+    for (final entry in style.toJson().entries) {
+      final key = entry.key;
+      final value = entry.value;
+
+      // Validate key
+      if (containsDisallowedCharacters(key)) {
+        logger.error(
+            'Custom parameter key "$key" contains disallowed characters');
+        continue;
+      }
+
+      // Validate string values
+      if (value is String && containsDisallowedCharacters(value)) {
+        logger.error(
+            'Custom parameter "$key" value contains disallowed characters');
+        continue;
+      }
+
+      // Add valid parameter
+      data[key] = value;
+    }
+  }
+
   /// Merges custom parameters into data map with validation
   ///
   /// Validates each custom parameter key and value for security.
@@ -123,5 +158,16 @@ class KinesteXViewBuilder {
       // Add valid parameter
       data[key] = value;
     }
+  }
+
+  static Color colorFromHex(String hex) {
+    hex = hex.replaceAll('#', '');
+
+    // If the string has only RGB (6 chars), add full opacity (FF)
+    if (hex.length == 6) {
+      hex = 'FF$hex';
+    }
+
+    return Color(int.parse(hex, radix: 16));
   }
 }
