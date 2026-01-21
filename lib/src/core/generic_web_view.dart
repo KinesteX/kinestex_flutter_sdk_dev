@@ -35,6 +35,7 @@ class GenericWebView extends StatefulWidget {
   final String userId;
   final String url;
   final Map<String, dynamic> data;
+  final Color overlayColor;
   final Function(WebViewMessage) onMessageReceived;
   final ValueNotifier<bool> isLoading;
   final ValueNotifier<bool> showKinesteX;
@@ -47,6 +48,7 @@ class GenericWebView extends StatefulWidget {
     required this.userId,
     required this.url,
     required this.data,
+    required this.overlayColor,
     required this.onMessageReceived,
     required this.isLoading,
     required this.showKinesteX,
@@ -60,11 +62,19 @@ class GenericWebView extends StatefulWidget {
 class _GenericWebViewState extends State<GenericWebView> {
   final _logger = KinesteXLogger.instance;
   String? _lastUpdatedExercise;
+  final ValueNotifier<bool> _showOverlay = ValueNotifier<bool>(true);
 
   @override
   void initState() {
     super.initState();
+    _showOverlay.value = true;
     _loadView();
+  }
+
+  @override
+  void dispose() {
+    _showOverlay.dispose();
+    super.dispose();
   }
 
   @override
@@ -80,6 +90,7 @@ class _GenericWebViewState extends State<GenericWebView> {
 
     if (paramsChanged) {
       _logger.info('Parameters changed, reloading view');
+      _showOverlay.value = true;
       _loadView();
     }
 
@@ -100,7 +111,12 @@ class _GenericWebViewState extends State<GenericWebView> {
       userId: widget.userId,
       url: widget.url,
       data: widget.data,
-      onMessageReceived: widget.onMessageReceived,
+      onMessageReceived: (message) {
+        if (message is KinestexLaunched) {
+          _showOverlay.value = false;
+        }
+        widget.onMessageReceived(message);
+      },
       isLoading: widget.isLoading,
     );
   }
@@ -159,7 +175,9 @@ class _GenericWebViewState extends State<GenericWebView> {
                 GenericWebView.controller.onLoadStop(controller, url);
                 // Fix dvh viewport height issue by injecting correct dimensions
                 final mediaQuery = MediaQuery.of(context);
-                final height = mediaQuery.size.height - mediaQuery.padding.top - mediaQuery.padding.bottom;
+                final height = mediaQuery.size.height -
+                    mediaQuery.padding.top -
+                    mediaQuery.padding.bottom;
                 final width = mediaQuery.size.width;
                 controller.evaluateJavascript(source: '''
                   (function() {
@@ -178,6 +196,17 @@ class _GenericWebViewState extends State<GenericWebView> {
                     .onPermissionRequest(controller, request);
               },
             ),
+          ),
+          ValueListenableBuilder<bool>(
+            valueListenable: _showOverlay,
+            builder: (context, showOverlay, child) {
+              if (!showOverlay) return const SizedBox.shrink();
+              return Container(
+                color: widget.overlayColor,
+                width: double.infinity,
+                height: double.infinity,
+              );
+            },
           ),
         ],
       ),

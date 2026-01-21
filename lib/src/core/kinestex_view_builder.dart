@@ -27,13 +27,19 @@ class KinesteXViewBuilder {
     _addUserDetails(finalData, user);
     _mergeCustomParams(finalData, customParams);
 
-    // Step 3: Create and return the WebView widget
+    // Step 3: Determine overlay color from customParams
+    final overlayColor = customParams?['style'] == 'light'
+        ? Colors.white
+        : Colors.black;
+
+    // Step 4: Create and return the WebView widget
     return GenericWebView(
       apiKey: apiKey,
       companyName: companyName,
       userId: userId,
       url: url,
       data: finalData,
+      overlayColor: overlayColor,
       isLoading: isLoading,
       showKinesteX: showKinesteX,
       onMessageReceived: onMessageReceived,
