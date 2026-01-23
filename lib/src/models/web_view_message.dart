@@ -12,6 +12,8 @@ abstract class WebViewMessage {
     switch (type) {
       case 'kinestex_launched':
         return KinestexLaunched(json);
+      case 'kinestex_loaded':
+        return KinestexLoaded(json);
       case 'finished_workout':
         return FinishedWorkout(json);
       case 'error_occurred':
@@ -50,6 +52,10 @@ abstract class WebViewMessage {
 
 class KinestexLaunched extends WebViewMessage {
   const KinestexLaunched(Map<String, dynamic> data) : super(data);
+}
+
+class KinestexLoaded extends WebViewMessage {
+  const KinestexLoaded(Map<String, dynamic> data) : super(data);
 }
 
 class FinishedWorkout extends WebViewMessage {

@@ -9,6 +9,7 @@ class KinesteXViewBuilder {
     required String companyName,
     required String userId,
     required String url,
+    IStyle? style,
     Map<String, dynamic> data = const {},
     UserDetails? user,
     Map<String, dynamic>? customParams,
@@ -22,18 +23,24 @@ class KinesteXViewBuilder {
       return Container();
     }
 
-    // Step 2: Build final data map
+    // Step 2: Build final data map (style is now passed via URL query params)
     final finalData = Map<String, dynamic>.from(data);
     _addUserDetails(finalData, user);
     _mergeCustomParams(finalData, customParams);
 
-    // Step 3: Create and return the WebView widget
+    // Step 3: Determine overlay color from customParams
+    final overlayColor = (style?.loadingBackgroundColor?.isNotEmpty ?? false)
+        ? colorFromHex(style!.loadingBackgroundColor!)
+        : Colors.black;
+
+    // Step 4: Create and return the WebView widget
     return GenericWebView(
       apiKey: apiKey,
       companyName: companyName,
       userId: userId,
       url: url,
       data: finalData,
+      overlayColor: overlayColor,
       isLoading: isLoading,
       showKinesteX: showKinesteX,
       onMessageReceived: onMessageReceived,
@@ -117,5 +124,16 @@ class KinesteXViewBuilder {
       // Add valid parameter
       data[key] = value;
     }
+  }
+
+  static Color colorFromHex(String hex) {
+    hex = hex.replaceAll('#', '');
+
+    // If the string has only RGB (6 chars), add full opacity (FF)
+    if (hex.length == 6) {
+      hex = 'FF$hex';
+    }
+
+    return Color(int.parse(hex, radix: 16));
   }
 }
