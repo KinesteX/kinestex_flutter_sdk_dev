@@ -73,30 +73,27 @@ class APIService {
 
       final path = '$endpoint$pathComponent';
 
-      // Build query parameters
-      // final queryParameters = <String, dynamic>{
-      //   'lang': lang,
-      // };
-      queryParameters['lang'] = lang;
+      final queryParams = Map<String, dynamic>.of(queryParameters);
+
+      queryParams['lang'] = lang;
 
       if (category != null) {
-        queryParameters['category'] = category;
+        queryParams['category'] = category;
       }
       if (lastDocId != null) {
-        queryParameters['lastDocId'] = lastDocId;
+        queryParams['lastDocId'] = lastDocId;
       }
       if (limit != null) {
-        queryParameters['limit'] = limit;
+        queryParams['limit'] = limit;
       }
       if (bodyParts != null && bodyParts.isNotEmpty) {
-        queryParameters['body_parts'] =
-            bodyParts.map((bp) => bp.value).join(',');
+        queryParams['body_parts'] = bodyParts.map((bp) => bp.value).join(',');
       }
 
       // Make request
       final response = await _dio.get(
         path,
-        queryParameters: queryParameters,
+        queryParameters: queryParams,
       );
 
       // Check status code
