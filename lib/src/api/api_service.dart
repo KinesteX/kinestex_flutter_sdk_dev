@@ -56,6 +56,7 @@ class APIService {
     String lang = 'en',
     String? category,
     List<BodyPart>? bodyParts,
+    Map<String, dynamic> queryParameters = const {},
     String? lastDocId,
     int? limit,
   }) async {
@@ -73,9 +74,10 @@ class APIService {
       final path = '$endpoint$pathComponent';
 
       // Build query parameters
-      final queryParameters = <String, dynamic>{
-        'lang': lang,
-      };
+      // final queryParameters = <String, dynamic>{
+      //   'lang': lang,
+      // };
+      queryParameters['lang'] = lang;
 
       if (category != null) {
         queryParameters['category'] = category;
