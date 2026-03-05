@@ -66,6 +66,47 @@ enum BodyPart {
 
 // MARK: - Base Models
 
+/// EquipmentModel represents an equipment item used in workouts and exercises
+@immutable
+class EquipmentModel {
+  final int id;
+  final String title;
+  final String description;
+  final String homeAlternative;
+  final String thumbnailUrl;
+
+  const EquipmentModel({
+    required this.id,
+    required this.title,
+    required this.description,
+    required this.homeAlternative,
+    required this.thumbnailUrl,
+  });
+
+  factory EquipmentModel.fromJson(Map<String, dynamic> json) {
+    return EquipmentModel(
+      id: (json['id'] as num?)?.toInt() ?? 0,
+      title: json['title']?.toString() ?? '',
+      description: json['description']?.toString() ?? '',
+      homeAlternative: json['home_alternative']?.toString() ?? '',
+      thumbnailUrl: json['thumbnail_url']?.toString() ?? '',
+    );
+  }
+}
+
+/// Safely parses a list of equipment JSON objects, skipping invalid entries
+List<EquipmentModel> _parseEquipmentList(List<dynamic>? equipmentJson) {
+  if (equipmentJson == null) return [];
+  return equipmentJson
+      .whereType<Map<String, dynamic>>()
+      .where((e) {
+        final title = e['title'];
+        return title != null && title.toString().isNotEmpty;
+      })
+      .map((e) => EquipmentModel.fromJson(e))
+      .toList();
+}
+
 /// WorkoutModel represents the structure of a workout returned by the API
 @immutable
 class WorkoutModel {
@@ -78,6 +119,7 @@ class WorkoutModel {
   final int? totalCalories;
   final List<String> bodyParts;
   final String? difficultyLevel;
+  final List<EquipmentModel> equipment;
   final List<ExerciseModel> sequence;
   final Map<String, dynamic>? rawJSON;
 
@@ -91,6 +133,7 @@ class WorkoutModel {
     this.totalCalories,
     required this.bodyParts,
     this.difficultyLevel,
+    this.equipment = const [],
     required this.sequence,
     this.rawJSON,
   });
@@ -109,6 +152,7 @@ class WorkoutModel {
               .toList() ??
           [],
       difficultyLevel: json['dif_level'] as String?,
+      equipment: _parseEquipmentList(json['equipment'] as List<dynamic>?),
       sequence: (json['sequence'] as List<dynamic>?)
               ?.map((e) => ExerciseModel.fromJson(e as Map<String, dynamic>))
               .toList() ??
@@ -136,6 +180,7 @@ class ExerciseModel {
   final String restSpeechText;
   final double? averageCalories;
   final List<String> bodyParts;
+  final List<EquipmentModel> equipment;
   final String description;
   final String difficultyLevel;
   final String commonMistakes;
@@ -160,6 +205,7 @@ class ExerciseModel {
     required this.restSpeechText,
     this.averageCalories,
     required this.bodyParts,
+    this.equipment = const [],
     required this.description,
     required this.difficultyLevel,
     required this.commonMistakes,
@@ -189,6 +235,7 @@ class ExerciseModel {
               ?.map((e) => e.toString())
               .toList() ??
           [],
+      equipment: _parseEquipmentList(json['equipment'] as List<dynamic>?),
       description:
           json['description'] as String? ?? 'Missing exercise description',
       difficultyLevel: json['dif_level'] as String? ?? 'Medium',

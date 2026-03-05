@@ -86,6 +86,10 @@ class UrlHelper {
   String cameraView({IStyle? style}) =>
       _appendStyleQuery('$baseUrl/camera', style);
 
+  /// Custom component view URL with encoded route
+  String customComponentView(String route, {IStyle? style}) =>
+      _appendStyleQuery('$baseUrl/${Uri.encodeComponent(route)}', style);
+
   /// Admin view URL with complex parameters
   String adminView({
     AdminContentType? contentType,

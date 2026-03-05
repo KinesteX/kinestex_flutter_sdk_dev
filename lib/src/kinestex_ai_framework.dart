@@ -340,6 +340,41 @@ class KinesteXAIFramework {
     );
   }
 
+  /// Creates a custom component view for a given route
+  ///
+  /// Maps to ai.kinestex.com/{route}
+  static Widget createCustomComponentView({
+    required String route,
+    UserDetails? user,
+    Map<String, dynamic>? customParams,
+    IStyle? style,
+    required ValueNotifier<bool> isLoading,
+    required ValueNotifier<bool> isShowKinestex,
+    required Function(WebViewMessage) onMessageReceived,
+  }) {
+    if (containsDisallowedCharacters(route)) {
+      _logger.error(
+        'Validation Error: route contains disallowed characters',
+      );
+      return Container();
+    }
+
+    final creds = _credentials.credentials;
+
+    return KinesteXViewBuilder.build(
+      apiKey: creds.apiKey,
+      companyName: creds.companyName,
+      userId: creds.userId,
+      url: _urlHelper.customComponentView(route, style: style),
+      user: user,
+      style: style,
+      customParams: customParams,
+      isLoading: isLoading,
+      showKinesteX: isShowKinestex,
+      onMessageReceived: onMessageReceived,
+    );
+  }
+
   /// Creates an admin workout editor view
   static Widget createAdminWorkoutEditor({
     required String organization,
