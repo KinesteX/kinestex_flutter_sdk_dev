@@ -83,8 +83,13 @@ class KinesteXWebViewController {
         upgradeKnownHostsToHTTPS: false,
       ),
       onReceivedServerTrustAuthRequest: (controller, challenge) async {
+        // Allow self-signed certificates only for local network addresses
+        // (192.168.*). All other hosts rely on the OS trust store.
+        final host = challenge.protectionSpace.host;
         return ServerTrustAuthResponse(
-          action: ServerTrustAuthResponseAction.PROCEED,
+          action: host.startsWith('192.168.')
+              ? ServerTrustAuthResponseAction.PROCEED
+              : ServerTrustAuthResponseAction.CANCEL,
         );
       },
       onWebViewCreated: (controller) {
