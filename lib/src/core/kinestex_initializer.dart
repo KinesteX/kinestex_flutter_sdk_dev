@@ -31,6 +31,7 @@ class KinesteXInitializer {
   Future<void> dispose() async {
     try {
       await GenericWebView.disposeWarmup();
+      _isInitialized = false;
     } catch (e) {
       _logger.error('Dispose error', e);
     }

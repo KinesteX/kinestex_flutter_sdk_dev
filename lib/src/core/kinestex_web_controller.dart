@@ -80,7 +80,13 @@ class KinesteXWebViewController {
         transparentBackground: true,
         verticalScrollBarEnabled: false,
         horizontalScrollBarEnabled: false,
+        upgradeKnownHostsToHTTPS: false,
       ),
+      onReceivedServerTrustAuthRequest: (controller, challenge) async {
+        return ServerTrustAuthResponse(
+          action: ServerTrustAuthResponseAction.PROCEED,
+        );
+      },
       onWebViewCreated: (controller) {
         _logger.info('Headless WebView created');
         _webViewController = controller;
@@ -132,23 +138,8 @@ class KinesteXWebViewController {
     // Set loading state
     isLoading.value = true;
 
-    // If WebView already exists, navigate to new URL
-    if (_webViewController != null && (currentUrl?.isNotEmpty ?? false)) {
-      await _navigateToUrl(_currentUrl!);
-    }
-  }
-
-  /// Navigate to a new URL in the existing WebView
-  Future<void> _navigateToUrl(String url) async {
-    try {
-      _logger.info('Navigating to: $url');
-      await _webViewController?.loadUrl(
-        urlRequest: URLRequest(url: WebUri(url)),
-      );
-    } catch (e) {
-      _logger.error('Navigation failed', e);
-      _isLoading?.value = false;
-    }
+    // Note: Navigation happens via InAppWebView's initialUrlRequest in the widget
+    // The headless webview is only for warmup/engine initialization
   }
 
   /// Called when InAppWebView is created in the widget tree
@@ -161,9 +152,6 @@ class KinesteXWebViewController {
       handlerName: 'messageHandler',
       callback: _handleMessage,
     );
-
-    // If warmup is needed, the WebView will load the warmup URL first
-    // The actual URL navigation will happen in onLoadStop
   }
 
   /// Handle messages from WebView

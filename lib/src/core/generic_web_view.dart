@@ -163,6 +163,7 @@ class _GenericWebViewState extends State<GenericWebView> {
                 transparentBackground: true,
                 verticalScrollBarEnabled: false,
                 horizontalScrollBarEnabled: false,
+                upgradeKnownHostsToHTTPS: false,
               ),
               onConsoleMessage: (controller, consoleMessage) {
                 // Silently handle console messages
@@ -195,6 +196,11 @@ class _GenericWebViewState extends State<GenericWebView> {
                     window.dispatchEvent(new Event('resize'));
                   })();
                 ''');
+              },
+              onReceivedServerTrustAuthRequest: (controller, challenge) async {
+                return ServerTrustAuthResponse(
+                  action: ServerTrustAuthResponseAction.PROCEED,
+                );
               },
               onPermissionRequest: (controller, request) async {
                 return GenericWebView.controller
