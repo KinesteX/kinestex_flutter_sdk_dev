@@ -340,6 +340,33 @@ class KinesteXAIFramework {
     );
   }
 
+  /// Creates a trainer chat view
+  ///
+  /// Maps to ai.kinestex.com/trainer
+  static Widget createTrainerChatView({
+    UserDetails? user,
+    Map<String, dynamic>? customParams,
+    IStyle? style,
+    required ValueNotifier<bool> isLoading,
+    required ValueNotifier<bool> isShowKinestex,
+    required Function(WebViewMessage) onMessageReceived,
+  }) {
+    final creds = _credentials.credentials;
+
+    return KinesteXViewBuilder.build(
+      apiKey: creds.apiKey,
+      companyName: creds.companyName,
+      userId: creds.userId,
+      url: _urlHelper.trainerView(style: style),
+      user: user,
+      style: style,
+      customParams: customParams,
+      isLoading: isLoading,
+      showKinesteX: isShowKinestex,
+      onMessageReceived: onMessageReceived,
+    );
+  }
+
   /// Creates a custom component view for a given route
   ///
   /// Maps to ai.kinestex.com/{route}
