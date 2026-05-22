@@ -44,6 +44,8 @@ abstract class WebViewMessage {
         return ExerciseOverview(json);
       case 'workout_completed':
         return WorkoutCompleted(json);
+      case 'workout_session_saved':
+        return WorkoutSessionSaved(json);
       default:
         return CustomType(json);
     }
@@ -120,4 +122,16 @@ class ExerciseOverview extends WebViewMessage {
 
 class WorkoutCompleted extends WebViewMessage {
   WorkoutCompleted(Map<String, dynamic> data) : super(data);
+}
+
+class WorkoutSessionSaved extends WebViewMessage {
+  WorkoutSessionSaved(Map<String, dynamic> data) : super(data);
+
+  String? get sessionId {
+    final nested = data['data'];
+    if (nested is Map<String, dynamic>) {
+      return nested['session_id']?.toString();
+    }
+    return data['session_id']?.toString();
+  }
 }

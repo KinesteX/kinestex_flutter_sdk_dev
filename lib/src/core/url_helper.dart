@@ -92,7 +92,7 @@ class UrlHelper {
 
   /// Custom component view URL with encoded route
   String customComponentView(String route, {IStyle? style}) =>
-      _appendStyleQuery('$baseUrl/${Uri.encodeComponent(route)}', style);
+      _appendStyleQuery('$baseUrl/${_encodePath(route)}', style);
 
   /// Admin view URL with complex parameters
   String adminView({
