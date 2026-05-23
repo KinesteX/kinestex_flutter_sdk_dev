@@ -77,7 +77,7 @@ String lifestyleString(Lifestyle lifestyle) {
 }
 
 bool containsDisallowedCharacters(String input) {
-  final disallowedPattern = RegExp(r'<script>|</script>|[<>{}\[\];"\$\.\#]');
+  final disallowedPattern = RegExp(r'<script>|</script>|[<>{}\[\];"]');
   return disallowedPattern.hasMatch(input);
 }
 
