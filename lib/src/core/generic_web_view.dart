@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:kinestex_sdk_flutter/src/core/kinestex_logger.dart';
 import 'package:kinestex_sdk_flutter/src/core/kinestex_web_controller.dart';
 import '../models/web_view_message.dart';
@@ -40,6 +41,7 @@ class GenericWebView extends StatefulWidget {
   final ValueNotifier<bool> isLoading;
   final ValueNotifier<bool> showKinesteX;
   final String? updatedExercise;
+  final bool isDarkMode;
 
   const GenericWebView({
     super.key,
@@ -53,6 +55,7 @@ class GenericWebView extends StatefulWidget {
     required this.isLoading,
     required this.showKinesteX,
     this.updatedExercise,
+    this.isDarkMode = true,
   });
 
   @override
@@ -210,6 +213,33 @@ class _GenericWebViewState extends State<GenericWebView> {
                 color: widget.overlayColor,
                 width: double.infinity,
                 height: double.infinity,
+                child: SafeArea(
+                  child: Align(
+                    alignment: Alignment.topLeft,
+                    child: GestureDetector(
+                      onTap: () {
+                        final exitData = {
+                          'type': 'exit_kinestex',
+                          'timestamp': DateTime.now().toIso8601String(),
+                        };
+                        widget.onMessageReceived(ExitKinestex(exitData));
+                        widget.showKinesteX.value = false;
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: SvgPicture.asset(
+                          'packages/kinestex_sdk_flutter/assets/icons/ic_arrow_left.svg',
+                          colorFilter: ColorFilter.mode(
+                            widget.isDarkMode ? Colors.white : Colors.black,
+                            BlendMode.srcIn,
+                          ),
+                          width: 24,
+                          height: 24,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               );
             },
           ),

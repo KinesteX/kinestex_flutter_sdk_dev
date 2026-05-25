@@ -28,10 +28,11 @@ class KinesteXViewBuilder {
     _addUserDetails(finalData, user);
     _mergeCustomParams(finalData, customParams);
 
-    // Step 3: Determine overlay color from customParams
+    // Step 3: Determine overlay color and mode from style
     final overlayColor = (style?.loadingBackgroundColor?.isNotEmpty ?? false)
         ? colorFromHex(style!.loadingBackgroundColor!)
         : Colors.black;
+    final isDarkMode = style?.style != 'light';
 
     // Step 4: Create and return the WebView widget
     return GenericWebView(
@@ -45,6 +46,7 @@ class KinesteXViewBuilder {
       showKinesteX: showKinesteX,
       onMessageReceived: onMessageReceived,
       updatedExercise: updatedExercise,
+      isDarkMode: isDarkMode,
     );
   }
 

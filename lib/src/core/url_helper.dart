@@ -65,7 +65,8 @@ class UrlHelper {
 
   /// Experience view URL with encoded experience name
   String experienceView(String experience, {IStyle? style}) =>
-      _appendStyleQuery('$baseUrl/experiences/${_encodePath(experience)}', style);
+      _appendStyleQuery(
+          '$baseUrl/experiences/${_encodePath(experience)}', style);
 
   /// Personalized plan view URL
   String personalizedPlanView({IStyle? style}) =>
@@ -77,8 +78,9 @@ class UrlHelper {
 
   /// Leaderboard view URL with optional username
   String leaderboardView(String username, {IStyle? style}) {
-    final base =
-        username.isEmpty ? '$baseUrl/leaderboard' : '$baseUrl/leaderboard?username=${_encodePath(username)}';
+    final base = username.isEmpty
+        ? '$baseUrl/leaderboard'
+        : '$baseUrl/leaderboard?username=${_encodePath(username)}';
     return _appendStyleQuery(base, style);
   }
 
