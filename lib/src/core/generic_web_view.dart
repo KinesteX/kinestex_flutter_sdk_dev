@@ -213,29 +213,27 @@ class _GenericWebViewState extends State<GenericWebView> {
                 color: widget.overlayColor,
                 width: double.infinity,
                 height: double.infinity,
-                child: SafeArea(
-                  child: Align(
-                    alignment: Alignment.topLeft,
-                    child: GestureDetector(
-                      onTap: () {
-                        final exitData = {
-                          'type': 'exit_kinestex',
-                          'timestamp': DateTime.now().toIso8601String(),
-                        };
-                        widget.onMessageReceived(ExitKinestex(exitData));
-                        widget.showKinesteX.value = false;
-                      },
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: SvgPicture.asset(
-                          'packages/kinestex_sdk_flutter/assets/icons/ic_arrow_left.svg',
-                          colorFilter: ColorFilter.mode(
-                            widget.isDarkMode ? Colors.white : Colors.black,
-                            BlendMode.srcIn,
-                          ),
-                          width: 24,
-                          height: 24,
+                child: Align(
+                  alignment: Alignment.topLeft,
+                  child: GestureDetector(
+                    onTap: () {
+                      final exitData = {
+                        'type': 'exit_kinestex',
+                        'timestamp': DateTime.now().toIso8601String(),
+                      };
+                      widget.onMessageReceived(ExitKinestex(exitData));
+                      widget.showKinesteX.value = false;
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.all(26.0),
+                      child: SvgPicture.asset(
+                        'packages/kinestex_sdk_flutter/assets/icons/ic_arrow_left.svg',
+                        colorFilter: ColorFilter.mode(
+                          widget.isDarkMode ? Colors.white : Colors.black,
+                          BlendMode.srcIn,
                         ),
+                        width: 20,
+                        height: 20,
                       ),
                     ),
                   ),
