@@ -31,7 +31,7 @@ class KinesteXViewBuilder {
     // Step 3: Determine overlay color and mode from style
     final overlayColor = (style?.loadingBackgroundColor?.isNotEmpty ?? false)
         ? colorFromHex(style!.loadingBackgroundColor!)
-        : Colors.black;
+        : style?.style == 'light' ? Colors.white : Colors.black;
     final isDarkMode = style?.style != 'light';
 
     // Step 4: Create and return the WebView widget
