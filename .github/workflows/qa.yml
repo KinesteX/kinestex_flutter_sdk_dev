@@ -1,0 +1,334 @@
+name: QA Assessment
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+concurrency:
+  group: qa-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  qa-assessment:
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run QA Assessment
+        id: qa
+        uses: anthropics/claude-code-action@v1
+        env:
+          GH_TOKEN: ${{ github.token }}
+        with:
+          github_token: ${{ github.token }}
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: >-
+            --print
+            --output-format stream-json
+            --allowedTools "Bash" "Read" "Grep" "Glob"
+            --model claude-opus-4-7
+          prompt: |
+            You are a QA analyst for the KinesteX Flutter SDK. It's a privacy-first AI fitness & physio motion-tracking SDK distributed as a Flutter/Dart package (`kinestex_sdk_flutter`) and consumed by external Flutter apps. It embeds KinesteX AI experiences from `ai.kinestex.com` inside a reusable/headless in-app WebView and exposes a typed `dio` HTTP client to `admin.kinestex.com/api/v1` for fetching workouts, plans, and exercises.
+
+            Your job is to assess the risk, regression potential, and testing surface of a pull request before it merges.
+
+            STACK:
+              - Dart / Flutter (Dart SDK >=3.3.0, Flutter >=1.17.0)
+              - flutter_inappwebview (hosts the KinesteX web app in a singleton/warmed-up WebView)
+              - dio (HTTP client for the KinesteX content API)
+              - Published on pub.dev; the public API surface is the `lib/kinestex_sdk.dart` barrel exports
+            ARCHITECTURE:
+              - `lib/kinestex_sdk.dart` — public barrel re-exporting the SDK's public API.
+              - `lib/src/kinestex_ai_framework.dart` — `KinesteXAIFramework` static facade: `initialize()`, the `create*View(...)` widget factories, `createCameraComponent(...)`, `sendAction()`.
+              - `lib/src/core/` — `generic_web_view.dart` (the `GenericWebView` widget + `static` singleton `KinesteXWebViewController` with warmup/dispose/isWarmedUp), `kinestex_web_controller.dart` (message handling, permissions), `kinestex_view_builder.dart`, `url_helper.dart`, `kinestex_initializer.dart`, `kinestex_credentials.dart`.
+              - `lib/src/api/` — `api_service.dart` (`APIService.fetchContent`) + `api_models.dart`.
+              - `lib/src/models/` — `data.dart` (enums, `UserDetails`, `IStyle`, `WorkoutSequenceExercise`, validation helpers) and `web_view_message.dart` (the `WebViewMessage` hierarchy with string-`type` dispatch).
+            CRITICAL REQUIREMENTS:
+              - Public API stability (published package — renamed/removed exports, changed signatures/enums/defaults break downstream apps).
+              - WebView lifecycle correctness (the singleton WebView must be torn down and must not register duplicate listeners, or it drains resources in the background and double-fires events).
+              - WebView <-> Flutter message contract via `WebViewMessage.fromJson` string `type` dispatch.
+              - Input validation (`containsDisallowedCharacters`) before any value reaches a URL or the WebView.
+
+            Analyze PR #${{ github.event.pull_request.number }} in ${{ github.repository }}.
+
+            ## Step 1: Understand the PR Intent
+
+            First, read the PR metadata to understand what this PR is trying to do:
+            ```bash
+            gh pr view ${{ github.event.pull_request.number }} --json title,body,labels,reviews,comments
+            ```
+
+            This helps you understand the author's intent so you can assess whether the changes actually accomplish what they claim.
+
+            ## Step 2: Gather Diff Data
+
+            The PR base branch is `${{ github.event.pull_request.base.ref }}`. Use it for all diffs.
+
+            ```bash
+            git fetch origin ${{ github.event.pull_request.base.ref }}
+            ```
+
+            Then run these to understand scope:
+            ```bash
+            BASE="origin/${{ github.event.pull_request.base.ref }}"
+            git log --oneline --no-merges ${BASE}..HEAD
+            git diff ${BASE}..HEAD --stat
+            git diff ${BASE}..HEAD --name-only
+            ```
+
+            Then read the ACTUAL diff content to understand what changed (this is critical — you cannot assess risk from file names alone):
+            ```bash
+            BASE="origin/${{ github.event.pull_request.base.ref }}"
+            git diff ${BASE}..HEAD
+            ```
+
+            If the diff is very large (>2000 lines), focus on the highest-risk areas first:
+            ```bash
+            BASE="origin/${{ github.event.pull_request.base.ref }}"
+            git diff ${BASE}..HEAD -- lib/src/core/generic_web_view.dart lib/src/core/kinestex_web_controller.dart
+            git diff ${BASE}..HEAD -- lib/src/models/web_view_message.dart
+            git diff ${BASE}..HEAD -- lib/src/kinestex_ai_framework.dart lib/src/core/kinestex_view_builder.dart
+            git diff ${BASE}..HEAD -- lib/src/core/url_helper.dart
+            git diff ${BASE}..HEAD -- lib/kinestex_sdk.dart lib/src/models/data.dart
+            git diff ${BASE}..HEAD -- lib/src/api/api_service.dart lib/src/api/api_models.dart
+            git diff ${BASE}..HEAD -- pubspec.yaml
+            ```
+
+            ## Step 3: Determine Impacted Integrations
+
+            Use this mapping to identify which integrations/surfaces are affected by the changed files:
+
+            | Integration / Surface | File-path patterns |
+            |---|---|
+            | Main / Plan / Workout / Experience / Personalized-Plan views | `lib/src/kinestex_ai_framework.dart` (`createMainView`/`createPlanView`/`createWorkoutView`/`createExperienceView`/`createPersonalizedPlanView`), `lib/src/core/url_helper.dart` |
+            | Challenge / Leaderboard views | `kinestex_ai_framework.dart` (`createChallengeView`/`createLeaderboardView`), `url_helper.dart` (`challengeView`/`leaderboardView`) |
+            | Camera component (real-time tracking) | `kinestex_ai_framework.dart` (`createCameraComponent`), `url_helper.dart` (`cameraView`) |
+            | Custom Workout view | `kinestex_ai_framework.dart` (`createCustomWorkoutView`), `data.dart` (`WorkoutSequenceExercise`/`normalizeWorkoutExercises`), `url_helper.dart` (`customWorkout`) |
+            | Trainer Chat view | `kinestex_ai_framework.dart` (`createTrainerChatView`), `url_helper.dart` (`trainerView`) |
+            | Custom Component view | `kinestex_ai_framework.dart` (`createCustomComponentView`), `url_helper.dart` (`customComponentView`) |
+            | Admin Workout Editor | `kinestex_ai_framework.dart` (`createAdminWorkoutEditor`), `url_helper.dart` (`adminView`) |
+            | Content API client (fetch workouts/plans/exercises) | `lib/src/api/api_service.dart`, `lib/src/api/api_models.dart` |
+            | WebView event stream (callbacks delivered to the integrator) | `lib/src/models/web_view_message.dart`, `lib/src/core/generic_web_view.dart`, `lib/src/core/kinestex_web_controller.dart` |
+
+            ALSO mark a surface as impacted if:
+            - Shared code it depends on changed (see list below)
+            - A cross-cutting contract used by that surface changed
+            - Route or top-level entry definitions changed
+
+            Shared infrastructure paths (when changed, mark as "All Integrations"):
+            - `lib/kinestex_sdk.dart` (public export barrel)
+            - `lib/src/core/generic_web_view.dart` and `lib/src/core/kinestex_web_controller.dart` (the singleton WebView + controller every view renders through)
+            - `lib/src/core/kinestex_view_builder.dart` (every `create*View` builds through it)
+            - `lib/src/core/url_helper.dart` (all view URLs)
+            - `lib/src/core/kinestex_initializer.dart` / `kinestex_credentials.dart` (`initialize()` + shared credentials)
+            - `lib/src/models/data.dart` (shared enums/models/validation used across all views)
+            - `lib/src/models/web_view_message.dart` (the event contract for every view)
+            - `pubspec.yaml` (dependency/version changes affecting the whole package)
+
+            ## Step 4: Identify Regressions and Degrading Changes
+
+            This is the most important step. For each significant code change in the diff, ask: "What was working before that might break now?"
+
+            Look specifically for:
+
+            **Breaking changes (highest risk)**:
+            - Removed or renamed public exports from `lib/kinestex_sdk.dart`, changed `create*View`/`fetchContent` signatures or default parameter values, altered function signatures in shared code
+            - Changed view URL paths or encoding in `url_helper.dart`
+            - Removed or renamed `WebViewMessage` `type` strings or message subclasses, or changed enum-to-string mappings (`planCategoryString`/`genderString`/`lifestyleString`/`segmentFor`)
+
+            **Behavioral regressions**:
+            - Changed logic in core business calculations, parsing, ordering, thresholds (e.g. `_processSequence` rest-duration assignment, `_parseResponse`) — compare old vs new and explain what's different
+            - Validation changes in `containsDisallowedCharacters` / `normalizeWorkoutExercises` that could over- or under-block input
+            - Default-value or enum-value changes
+
+            **WebView lifecycle & event regressions (this SDK's #1 historical failure)**:
+            - Changes to the singleton WebView controller (`GenericWebView.controller`), `warmup`/`disposeWarmup`/`isWarmedUp`, or when the WebView is created vs. reused — could leave the WebView running in the background after a view closes, draining CPU/battery/network. Trace the open -> close -> reopen cycle and confirm the WebView is torn down.
+            - Changes to where/when `onMessageReceived` listeners are attached (`_loadView`, controller message handling, `didUpdateWidget`) — could register the listener more than once, causing integrator callbacks (reps, mistakes, `finished_workout`, `exit_kinestex`, etc.) to fire two or more times for a single web event. Count listener registrations per mount.
+            - Undisposed `ValueNotifier`s, controllers, or listeners that leak across mounts.
+
+            **State management regressions**:
+            - Singleton/static state in the controller or credentials — check if consumers of the old shape still work
+            - Overlay / loading-state handling (`_showOverlay`, `isLoading`, `showKinesteX`) changes that could leave a blank overlay or never hide it
+            - Data flow changes between the framework facade, view builder, and WebView
+
+            **UI regressions**:
+            - Layout/viewport changes (e.g. the injected `--viewport-height`/`--vh` JS) that could break at different device sizes or orientations
+            - Removed elements, changed navigation/back behavior (`PopScope`/`onBackPressed`), overlay teardown timing
+
+            **Performance regressions**:
+            - New synchronous/blocking work on the UI isolate or in build()
+            - Large new dependencies in `pubspec.yaml`
+            - Repeated WebView creation instead of reuse of the warmed-up singleton
+
+            **Cross-platform / contract regressions**:
+            - WebView message payload changes — integrator callbacks might break
+            - iOS/Android-specific permission or WebView-setting changes
+            - Changes to the message handler routing (`WebViewMessage.fromJson`)
+
+            ## Step 5: Calculate Safety Score
+
+            Rate the PR merge safety from 1 to 10 based on these weighted factors:
+
+            | Factor                        | Weight | Scoring guide                                                              |
+            |-------------------------------|--------|----------------------------------------------------------------------------|
+            | Scope of changes              | 20%    | 10 = 1-3 files, isolated feature · 5 = 10-20 files · 1 = 30+ files, cross-cutting |
+            | Breaking change risk          | 25%    | 10 = no API/contract changes · 5 = additive changes · 1 = breaking export/signature/enum/message-type changes |
+            | WebView lifecycle & event-handler impact  | 20%    | 10 = no change to the WebView singleton, warmup/dispose, or listener registration · 5 = touches view reload/rebuild logic but listener attachment & teardown unchanged · 1 = changes controller lifecycle, warmup/dispose, or how onMessageReceived listeners attach (risk: background resource drain or duplicate event firing) |
+            | Shared code blast radius      | 15%    | 10 = feature-scoped only · 5 = shared view builder / URL helper · 1 = singleton controller / public barrel / shared models changed |
+            | Regression confidence         | 20%    | 10 = purely additive, no existing behavior touched · 5 = modified existing code but logic equivalent · 1 = core logic rewritten |
+
+            Compute a weighted score. Round to one decimal place.
+
+            Score interpretation:
+            - **8.0–10.0** 🟢 Safe to merge — low risk, minimal testing needed
+            - **5.0–7.9** 🟡 Moderate risk — targeted testing recommended before merge
+            - **3.0–4.9** 🟠 Elevated risk — thorough testing required across impacted integrations
+            - **1.0–2.9** 🔴 High risk — extensive manual QA mandatory, consider breaking PR into smaller pieces
+
+            ## Step 6: Write the QA Assessment
+
+            Format (omit empty sections):
+
+            ```
+            <!-- kinestex-qa -->
+            <!-- kinestex-qa-created: __CREATED_AT__ -->
+            ---
+
+            ## 🧪 QA Assessment
+
+            🕒 **Created**: __CREATED_AT__ · **Last updated**: __NOW__ · **Run**: [#__RUN_NUMBER__](__RUN_URL__)
+
+            **Safety Score: [X.X]/10** [🟢/🟡/🟠/🔴]
+
+            > [2-3 sentences. What changed at a high level? What's the biggest risk? Is this PR safe or does it need careful testing?]
+
+            📊 **[N] files changed** · **[+N / -N] lines** · **[N] commits**
+
+            **Impacted Integrations**: `Surface A` · `Surface B` · ...
+            _(or "All Integrations" if shared infra changed)_
+
+            ---
+
+            ### What Changed
+            - [Plain-English description of each meaningful change]
+            - [Focus on WHAT changed for users/integrators, not HOW it was coded]
+
+            ### Regression Risks
+            - ⚠️ [Specific risk: what worked before that could break, and why]
+            - [Back each risk with what you saw in the diff — no vague warnings]
+            - [If no real regression risks exist, write "No regression risks identified"]
+
+            ### What to Test
+
+            **🔴 Critical** _(must pass before merge)_
+            - [ ] [Test case targeting the highest-risk change]
+            - [ ] [Test case for any behavioral regression risk identified above]
+
+            **🟡 Important** _(should test before merge)_
+            - [ ] [Test cases for each impacted integration]
+            - [ ] [WebView open → close → reopen cycle if lifecycle/event code changed: confirm no background drain and each event callback fires exactly once]
+
+            **🟢 Spot Check** _(quick verification)_
+            - [ ] [Low-risk areas that are still worth a glance]
+
+            ### Score Breakdown
+            | Factor | Score | Notes |
+            |--------|-------|-------|
+            | Scope of changes | X/10 | [brief note] |
+            | Breaking change risk | X/10 | [brief note] |
+            | WebView lifecycle & event-handler impact | X/10 | [brief note] |
+            | Shared code blast radius | X/10 | [brief note] |
+            | Regression confidence | X/10 | [brief note] |
+            ```
+
+            Rules for the assessment:
+            - Be practical and evidence-based. Every risk must point to something concrete in the diff.
+            - Test cases must be specific and actionable — a QA person should be able to follow them without reading the code.
+            - No internal code details in the output: no class names, function names, file paths, or controller names. Describe behavior only (e.g. "open a workout, close it, reopen it, and confirm rep events are reported only once").
+            - Keep it concise. This is a quick-read for QA, not an exhaustive document.
+            - If the PR is truly low-risk (copy changes, config tweaks, isolated feature), say so clearly and keep the assessment short. Don't manufacture risks.
+            - The test priority levels (Critical/Important/Spot Check) are essential — QA needs to know where to focus.
+
+            ## Step 7: Update the PR Description
+
+            You must APPEND the QA assessment to the PR description. Do NOT overwrite the existing description. Every push triggers a re-analysis, so always replace the previous QA section with fresh results.
+
+            Use file-based operations to avoid shell escaping issues. Follow this exact sequence:
+
+            1. Save current PR body to a file:
+            ```bash
+            gh pr view ${{ github.event.pull_request.number }} --json body --jq .body > /tmp/pr_body.txt
+            ```
+
+            2. Compute timestamps. Preserve the original `Created` time across re-runs by extracting it from the existing QA section (if any). `Last updated` is always now. The `Run` link points to the current GitHub Actions run so a reader can verify which commit produced the assessment:
+            ```bash
+            NOW=$(date -u +"%Y-%m-%d %H:%M UTC")
+            CREATED_AT=""
+            if grep -q '<!-- kinestex-qa-created:' /tmp/pr_body.txt; then
+              CREATED_AT=$(grep -o '<!-- kinestex-qa-created: [^>]* -->' /tmp/pr_body.txt | head -1 | sed -E 's/<!-- kinestex-qa-created: (.*) -->/\1/' | sed 's/[[:space:]]*$//')
+            fi
+            if [ -z "$CREATED_AT" ]; then CREATED_AT="$NOW"; fi
+            RUN_NUMBER="${{ github.run_number }}"
+            RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            ```
+
+            3. Strip any existing QA section (everything from the marker to end of file):
+            ```bash
+            if grep -q '<!-- kinestex-qa -->' /tmp/pr_body.txt; then
+              awk '/<!-- kinestex-qa -->/{exit} {print}' /tmp/pr_body.txt > /tmp/pr_clean.txt
+            else
+              cp /tmp/pr_body.txt /tmp/pr_clean.txt
+            fi
+            ```
+
+            4. Write the new QA assessment to its own file. Use a quoted heredoc (`'QAEOF'`) so backticks/dollars in the markdown body don't expand. Leave the four placeholders (`__CREATED_AT__`, `__NOW__`, `__RUN_NUMBER__`, `__RUN_URL__`) literal — they get substituted in the next step:
+            ```bash
+            cat > /tmp/qa_section.txt << 'QAEOF'
+            <!-- kinestex-qa -->
+            <!-- kinestex-qa-created: __CREATED_AT__ -->
+            ...your generated QA content with the four __PLACEHOLDER__ tokens kept verbatim in the timestamp header...
+            QAEOF
+            ```
+
+            5. Substitute the placeholders. Use `|` as the sed delimiter because `RUN_URL` contains `/`:
+            ```bash
+            sed -i "s|__CREATED_AT__|${CREATED_AT}|g; s|__NOW__|${NOW}|g; s|__RUN_NUMBER__|${RUN_NUMBER}|g; s|__RUN_URL__|${RUN_URL}|g" /tmp/qa_section.txt
+            ```
+
+            6. Combine and update the PR:
+            ```bash
+            printf '\n' >> /tmp/pr_clean.txt
+            cat /tmp/qa_section.txt >> /tmp/pr_clean.txt
+            gh pr edit ${{ github.event.pull_request.number }} --body-file /tmp/pr_clean.txt
+            ```
+
+            7. Clean up:
+            ```bash
+            rm -f /tmp/pr_body.txt /tmp/pr_clean.txt /tmp/qa_section.txt
+            ```
+
+            CRITICAL:
+            - ALWAYS use `--body-file`, NEVER `--body` with shell variables — markdown with backticks, quotes, and special chars will break otherwise.
+            - The `<!-- kinestex-qa -->` marker MUST be the first line of the QA section so it can be found and replaced on subsequent runs.
+            - The `<!-- kinestex-qa-created: ... -->` marker MUST be the second line so the original creation time round-trips across re-runs. Do not move or remove it.
+            - Do NOT remove or alter anything above the `<!-- kinestex-qa -->` marker in the existing description.
+            - Substitute the four `__PLACEHOLDER__` tokens via `sed` AFTER the heredoc — never inside the quoted heredoc, or shell escaping will break the markdown.
+
+            ## Self-Review Before Posting
+
+            Before posting, verify:
+            - [ ] You actually READ the diff content, not just file names — your risks and test cases reflect real code changes
+            - [ ] Impacted integrations list matches the changed files against the mapping table
+            - [ ] Every regression risk points to a specific change you saw in the diff
+            - [ ] Test cases cover all impacted integrations with correct priority levels
+            - [ ] Safety score math is correct (weighted average of 5 factors)
+            - [ ] No internal code details leaked (no class names, file paths, function names)
+            - [ ] The existing PR description is fully preserved above the QA marker
