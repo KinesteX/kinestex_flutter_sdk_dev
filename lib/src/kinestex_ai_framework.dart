@@ -8,6 +8,11 @@ import 'core/url_helper.dart';
 import 'core/generic_web_view.dart';
 import '../kinestex_sdk.dart';
 
+/// Entry point for the KinesteX AI SDK.
+///
+/// Call [initialize] once with your credentials, then use the `create*View`
+/// factories to embed KinesteX experiences, or [sendAction] to control an
+/// active session.
 class KinesteXAIFramework {
   static const _urlHelper = UrlHelper();
   static final _initializer = KinesteXInitializer();
