@@ -130,7 +130,10 @@ class _GenericWebViewState extends State<GenericWebView> {
         widget.onMessageReceived(message);
       },
       isLoading: widget.isLoading,
-    );
+    ).catchError((e) {
+      _logger.error('Failed to load view: $e');
+      if (mounted) widget.isLoading.value = false;
+    });
   }
 
   @override
