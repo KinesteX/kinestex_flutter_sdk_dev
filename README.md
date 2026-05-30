@@ -1,4 +1,4 @@
-# [Precise Motion Tracking and Analysis SDK](https://kinestex.com)
+# [Precise Motion Tracking and Analysis SDK](https://kinestex.com) 
 ## Stay Ahead with KinesteX AI Motion Tracking.
 
 ## Available Integration Options

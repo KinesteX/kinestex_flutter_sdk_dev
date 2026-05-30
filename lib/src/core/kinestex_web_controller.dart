@@ -42,6 +42,8 @@ class KinesteXWebViewController {
   int _retryCount = 0;
   final int _maxRetries = 3;
 
+  bool _kinestexLoadedHandled = false;
+
   // Getters
   bool get isInitialized => _isInitialized;
   String? get currentUrl => _currentUrl;
@@ -83,12 +85,6 @@ class KinesteXWebViewController {
       ),
       onWebViewCreated: (controller) {
         _logger.info('Headless WebView created');
-        _webViewController = controller;
-
-        controller.addJavaScriptHandler(
-          handlerName: 'messageHandler',
-          callback: _handleMessage,
-        );
       },
       onLoadStop: (controller, url) async {
         _logger.success('Warmup page fully loaded: $url');
@@ -128,46 +124,42 @@ class KinesteXWebViewController {
     _currentData = data;
     _onMessageReceived = onMessageReceived;
     _isLoading = isLoading;
+    _kinestexLoadedHandled = false;
 
     // Set loading state
     isLoading.value = true;
 
-    // If WebView already exists, navigate to new URL
-    if (_webViewController != null && (currentUrl?.isNotEmpty ?? false)) {
-      await _navigateToUrl(_currentUrl!);
-    }
-  }
-
-  /// Navigate to a new URL in the existing WebView
-  Future<void> _navigateToUrl(String url) async {
-    try {
-      _logger.info('Navigating to: $url');
-      await _webViewController?.loadUrl(
-        urlRequest: URLRequest(url: WebUri(url)),
-      );
-    } catch (e) {
-      _logger.error('Navigation failed', e);
-      _isLoading?.value = false;
+    // If a controller is already registered (didUpdateWidget reload case),
+    // navigate it to the new URL — onWebViewCreated won't fire again for
+    // a reused widget subtree, so we must drive navigation explicitly.
+    if (_webViewController != null && url != null) {
+      await _webViewController!
+          .loadUrl(urlRequest: URLRequest(url: WebUri(url)));
     }
   }
 
   /// Called when InAppWebView is created in the widget tree
   void onWebViewCreated(InAppWebViewController controller) {
+    if (_webViewController != null) {
+      _logger.info(
+          'Secondary WebView detected (popup) — not registering as primary');
+      return;
+    }
+    if (_headlessWebView != null) {
+      _headlessWebView!.dispose();
+      _headlessWebView = null;
+    }
     _webViewController = controller;
     _logger.info('InAppWebView created and attached to controller');
 
-    // Set up message handler
     controller.addJavaScriptHandler(
       handlerName: 'messageHandler',
-      callback: _handleMessage,
+      callback: (args) => _handleMessage(args, controller),
     );
-
-    // If warmup is needed, the WebView will load the warmup URL first
-    // The actual URL navigation will happen in onLoadStop
   }
 
-  /// Handle messages from WebView
-  void _handleMessage(List<dynamic> args) {
+  void _handleMessage(
+      List<dynamic> args, InAppWebViewController senderController) {
     try {
       if (args.isEmpty) return;
 
@@ -195,7 +187,13 @@ class KinesteXWebViewController {
         _retryCount = 0;
       }
 
-      if (decodedData['type'] == 'kinestex_loaded') {
+      if (webViewMessage is KinestexLoaded) {
+        if (_kinestexLoadedHandled) {
+          _logger.info('Duplicate kinestex_loaded ignored');
+          return;
+        }
+        _kinestexLoadedHandled = true;
+        _webViewController = senderController;
         Future.delayed(const Duration(milliseconds: 200), () {
           _isLoading?.value = false;
         });
@@ -235,11 +233,11 @@ class KinesteXWebViewController {
     String script = """
     function sendMessage() {
       const message = {
-        'key': '$_currentApiKey',
-        'company': '$_currentCompanyName',
-        'userId': '$_currentUserId',
+        'key': ${jsonEncode(_currentApiKey)},
+        'company': ${jsonEncode(_currentCompanyName)},
+        'userId': ${jsonEncode(_currentUserId)},
         'exercises': ${jsonEncode(_currentData?['exercises'] ?? [])},
-        'currentExercise': '${_currentData?['currentExercise'] ?? ''}',
+        'currentExercise': ${jsonEncode(_currentData?['currentExercise'] ?? '')},
         'customWorkoutExercises': ${jsonEncode(_currentData?['customWorkoutExercises'] ?? [])},
         ${_mapToJson(_currentData ?? {})}
       };
@@ -277,8 +275,7 @@ class KinesteXWebViewController {
     }
 
     final String script = '''
-      window.postMessage({
-        'currentExercise': '$exercise' }, '$_currentUrl');
+      window.postMessage(${jsonEncode({'currentExercise': exercise})}, '$_currentUrl');
     ''';
 
     _logger.info('Updating currentExercise: $exercise');
@@ -335,6 +332,13 @@ class KinesteXWebViewController {
     }
   }
 
+  void onWebViewDisposed(InAppWebViewController controller) {
+    if (_webViewController == controller) {
+      _webViewController = null;
+      _logger.info('WebView controller cleared after widget dispose');
+    }
+  }
+
   /// Handle navigation (back button, etc.)
   Future<bool> onBackPressed() async {
     if (_webViewController == null) return true;
@@ -384,6 +388,7 @@ class KinesteXWebViewController {
     _currentData = null;
     _onMessageReceived = null;
     _isLoading = null;
+    _kinestexLoadedHandled = false;
 
     // Clear headlessWebView
     await _headlessWebView?.dispose();
