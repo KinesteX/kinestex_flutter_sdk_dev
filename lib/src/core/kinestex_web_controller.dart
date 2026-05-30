@@ -115,7 +115,6 @@ class KinesteXWebViewController {
     }
 
     _logger.info('Loading view: $url');
-    _webViewController = null;
 
     // Store current state
     _currentUrl = url;
@@ -129,18 +128,26 @@ class KinesteXWebViewController {
 
     // Set loading state
     isLoading.value = true;
+
+    // If a controller is already registered (didUpdateWidget reload case),
+    // navigate it to the new URL — onWebViewCreated won't fire again for
+    // a reused widget subtree, so we must drive navigation explicitly.
+    if (_webViewController != null && url != null) {
+      await _webViewController!
+          .loadUrl(urlRequest: URLRequest(url: WebUri(url)));
+    }
   }
 
   /// Called when InAppWebView is created in the widget tree
   void onWebViewCreated(InAppWebViewController controller) {
-    if (_headlessWebView != null) {
-      _headlessWebView!.dispose();
-      _headlessWebView = null;
-    }
     if (_webViewController != null) {
       _logger.info(
           'Secondary WebView detected (popup) — not registering as primary');
       return;
+    }
+    if (_headlessWebView != null) {
+      _headlessWebView!.dispose();
+      _headlessWebView = null;
     }
     _webViewController = controller;
     _logger.info('InAppWebView created and attached to controller');
@@ -180,7 +187,7 @@ class KinesteXWebViewController {
         _retryCount = 0;
       }
 
-      if (decodedData['type'] == 'kinestex_loaded') {
+      if (webViewMessage is KinestexLoaded) {
         if (_kinestexLoadedHandled) {
           _logger.info('Duplicate kinestex_loaded ignored');
           return;
@@ -226,11 +233,11 @@ class KinesteXWebViewController {
     String script = """
     function sendMessage() {
       const message = {
-        'key': '$_currentApiKey',
-        'company': '$_currentCompanyName',
-        'userId': '$_currentUserId',
+        'key': ${jsonEncode(_currentApiKey)},
+        'company': ${jsonEncode(_currentCompanyName)},
+        'userId': ${jsonEncode(_currentUserId)},
         'exercises': ${jsonEncode(_currentData?['exercises'] ?? [])},
-        'currentExercise': '${_currentData?['currentExercise'] ?? ''}',
+        'currentExercise': ${jsonEncode(_currentData?['currentExercise'] ?? '')},
         'customWorkoutExercises': ${jsonEncode(_currentData?['customWorkoutExercises'] ?? [])},
         ${_mapToJson(_currentData ?? {})}
       };
@@ -268,8 +275,7 @@ class KinesteXWebViewController {
     }
 
     final String script = '''
-      window.postMessage({
-        'currentExercise': '$exercise' }, '$_currentUrl');
+      window.postMessage(${jsonEncode({'currentExercise': exercise})}, '$_currentUrl');
     ''';
 
     _logger.info('Updating currentExercise: $exercise');

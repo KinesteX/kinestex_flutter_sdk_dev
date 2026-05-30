@@ -66,6 +66,7 @@ class _GenericWebViewState extends State<GenericWebView> {
   final _logger = KinesteXLogger.instance;
   String? _lastUpdatedExercise;
   final ValueNotifier<bool> _showOverlay = ValueNotifier<bool>(true);
+  InAppWebViewController? _innerController;
 
   @override
   void initState() {
@@ -76,6 +77,9 @@ class _GenericWebViewState extends State<GenericWebView> {
 
   @override
   void dispose() {
+    if (_innerController != null) {
+      GenericWebView.controller.onWebViewDisposed(_innerController!);
+    }
     _showOverlay.dispose();
     super.dispose();
   }
@@ -174,6 +178,7 @@ class _GenericWebViewState extends State<GenericWebView> {
                 _logger.error('WebView error: ${error.description}');
               },
               onWebViewCreated: (controller) {
+                _innerController = controller;
                 GenericWebView.controller.onWebViewCreated(controller);
               },
               onLoadStart: (controller, url) {

@@ -151,6 +151,8 @@ class UrlHelper {
     return uri.toString();
   }
 
-  /// Private path encoder - replaces spaces with %20
-  String _encodePath(String path) => path.replaceAll(' ', '%20');
+  /// Private path encoder - encodes each path segment individually,
+  /// preserving intentional slashes in multi-segment routes.
+  String _encodePath(String path) =>
+      path.split('/').map(Uri.encodeComponent).join('/');
 }

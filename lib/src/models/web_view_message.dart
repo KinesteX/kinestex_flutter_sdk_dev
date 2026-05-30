@@ -125,7 +125,7 @@ class WorkoutCompleted extends WebViewMessage {
 }
 
 class WorkoutSessionSaved extends WebViewMessage {
-  WorkoutSessionSaved(Map<String, dynamic> data) : super(data);
+  const WorkoutSessionSaved(Map<String, dynamic> data) : super(data);
 
   String? get sessionId {
     final nested = data['data'];
