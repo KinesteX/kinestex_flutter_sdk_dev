@@ -1,6 +1,6 @@
 name: kinestex_sdk_flutter
 description: "KinesteX AI provides personal AI Fitness and Physio to your clients"
-version: 1.4.8
+version: 1.4.9
 homepage: https://kinestex.com
 
 environment:
