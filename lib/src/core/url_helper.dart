@@ -65,7 +65,8 @@ class UrlHelper {
 
   /// Experience view URL with encoded experience name
   String experienceView(String experience, {IStyle? style}) =>
-      _appendStyleQuery('$baseUrl/experiences/${_encodePath(experience)}', style);
+      _appendStyleQuery(
+          '$baseUrl/experiences/${_encodePath(experience)}', style);
 
   /// Personalized plan view URL
   String personalizedPlanView({IStyle? style}) =>
@@ -77,8 +78,9 @@ class UrlHelper {
 
   /// Leaderboard view URL with optional username
   String leaderboardView(String username, {IStyle? style}) {
-    final base =
-        username.isEmpty ? '$baseUrl/leaderboard' : '$baseUrl/leaderboard?username=${_encodePath(username)}';
+    final base = username.isEmpty
+        ? '$baseUrl/leaderboard'
+        : '$baseUrl/leaderboard?username=${_encodePath(username)}';
     return _appendStyleQuery(base, style);
   }
 
@@ -92,7 +94,7 @@ class UrlHelper {
 
   /// Custom component view URL with encoded route
   String customComponentView(String route, {IStyle? style}) =>
-      _appendStyleQuery('$baseUrl/${Uri.encodeComponent(route)}', style);
+      _appendStyleQuery('$baseUrl/${_encodePath(route)}', style);
 
   /// Admin view URL with complex parameters
   String adminView({
@@ -149,6 +151,8 @@ class UrlHelper {
     return uri.toString();
   }
 
-  /// Private path encoder - replaces spaces with %20
-  String _encodePath(String path) => path.replaceAll(' ', '%20');
+  /// Private path encoder - encodes each path segment individually,
+  /// preserving intentional slashes in multi-segment routes.
+  String _encodePath(String path) =>
+      path.split('/').map(Uri.encodeComponent).join('/');
 }

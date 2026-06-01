@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:kinestex_sdk_flutter/src/core/kinestex_logger.dart';
 import 'package:kinestex_sdk_flutter/src/core/kinestex_web_controller.dart';
 import '../models/web_view_message.dart';
@@ -40,6 +41,7 @@ class GenericWebView extends StatefulWidget {
   final ValueNotifier<bool> isLoading;
   final ValueNotifier<bool> showKinesteX;
   final String? updatedExercise;
+  final bool isDarkMode;
 
   const GenericWebView({
     super.key,
@@ -53,6 +55,7 @@ class GenericWebView extends StatefulWidget {
     required this.isLoading,
     required this.showKinesteX,
     this.updatedExercise,
+    this.isDarkMode = true,
   });
 
   @override
@@ -63,6 +66,7 @@ class _GenericWebViewState extends State<GenericWebView> {
   final _logger = KinesteXLogger.instance;
   String? _lastUpdatedExercise;
   final ValueNotifier<bool> _showOverlay = ValueNotifier<bool>(true);
+  InAppWebViewController? _innerController;
 
   @override
   void initState() {
@@ -73,6 +77,9 @@ class _GenericWebViewState extends State<GenericWebView> {
 
   @override
   void dispose() {
+    if (_innerController != null) {
+      GenericWebView.controller.onWebViewDisposed(_innerController!);
+    }
     _showOverlay.dispose();
     super.dispose();
   }
@@ -171,6 +178,7 @@ class _GenericWebViewState extends State<GenericWebView> {
                 _logger.error('WebView error: ${error.description}');
               },
               onWebViewCreated: (controller) {
+                _innerController = controller;
                 GenericWebView.controller.onWebViewCreated(controller);
               },
               onLoadStart: (controller, url) {
@@ -210,6 +218,31 @@ class _GenericWebViewState extends State<GenericWebView> {
                 color: widget.overlayColor,
                 width: double.infinity,
                 height: double.infinity,
+                child: Align(
+                  alignment: Alignment.topLeft,
+                  child: GestureDetector(
+                    onTap: () {
+                      final exitData = {
+                        'type': 'exit_kinestex',
+                        'timestamp': DateTime.now().toIso8601String(),
+                      };
+                      widget.onMessageReceived(ExitKinestex(exitData));
+                      widget.showKinesteX.value = false;
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.all(26.0),
+                      child: SvgPicture.asset(
+                        'packages/kinestex_sdk_flutter/assets/icons/ic_arrow_left.svg',
+                        colorFilter: ColorFilter.mode(
+                          widget.isDarkMode ? Colors.white : Colors.black,
+                          BlendMode.srcIn,
+                        ),
+                        width: 20,
+                        height: 20,
+                      ),
+                    ),
+                  ),
+                ),
               );
             },
           ),
