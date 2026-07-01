@@ -26,8 +26,16 @@ class KinesteXAIFramework {
     return _apiService!;
   }
 
+  /// Initialize the SDK.
+  ///
+  /// [apiKey] is optional. Omit it (or pass an empty string) when using the
+  /// session-token flow — instead pass the session id through `customParams` on
+  /// the create*View call, e.g. `customParams: {'session': '<sessionId>'}`. The
+  /// web app authenticates with that session and never receives the API key.
+  /// Provide [apiKey] to keep using the legacy API-key flow. Exactly one of the
+  /// two (API key, or a `session` custom param) should be supplied.
   static Future<void> initialize({
-    required String apiKey,
+    String apiKey = '',
     required String companyName,
     required String userId,
   }) async {
