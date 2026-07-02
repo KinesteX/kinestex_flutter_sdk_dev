@@ -138,13 +138,15 @@ class _GenericWebViewState extends State<GenericWebView> {
         if (message is KinestexLaunched) {
           _launched = true;
           _launchTimer?.cancel();
+          _showRetry.value = false;
         }
         if (message is KinestexLoaded) {
           _launchTimer?.cancel();
+          _showRetry.value = false;
           Future.delayed(
             const Duration(milliseconds: 200),
             () {
-              _showOverlay.value = false;
+              if (mounted) _showOverlay.value = false;
             },
           );
         }
