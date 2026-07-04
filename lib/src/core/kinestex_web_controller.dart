@@ -43,6 +43,7 @@ class KinesteXWebViewController {
   final int _maxRetries = 3;
 
   bool _kinestexLoadedHandled = false;
+  int _sessionToken = 0;
 
   // Getters
   bool get isInitialized => _isInitialized;
@@ -115,6 +116,12 @@ class KinesteXWebViewController {
     }
 
     _logger.info('Loading view: $url');
+
+    // Cancel any in-flight retry from a previous session before overwriting state
+    _launchTimer?.cancel();
+    _launchTimer = null;
+    _retryCount = 0;
+    ++_sessionToken;
 
     // Store current state
     _currentUrl = url;
@@ -194,8 +201,9 @@ class KinesteXWebViewController {
         }
         _kinestexLoadedHandled = true;
         _webViewController = senderController;
+        final token = _sessionToken;
         Future.delayed(const Duration(milliseconds: 200), () {
-          _isLoading?.value = false;
+          if (_sessionToken == token) _isLoading?.value = false;
         });
         _loadInitialData();
       }
@@ -389,6 +397,7 @@ class KinesteXWebViewController {
     _onMessageReceived = null;
     _isLoading = null;
     _kinestexLoadedHandled = false;
+    _sessionToken = 0;
 
     // Clear headlessWebView
     await _headlessWebView?.dispose();
