@@ -7,7 +7,9 @@ import '../models/index.dart';
 
 /// Singleton controller managing WebView lifecycle for optimal performance
 ///
-/// Uses a headless WebView for warmup (engine initialization and resource caching),
+/// Uses a headless WebView for warmup (engine initialization and resource caching;
+/// with full credentials it also completes the launch handshake so the page
+/// verifies and prefetches models, speech and the pose engine),
 /// then creates fresh InAppWebView instances with NO navigation history.
 /// This prevents the iOS swipe-back issue while maintaining warmup benefits.
 class KinesteXWebViewController {
@@ -45,6 +47,13 @@ class KinesteXWebViewController {
   bool _kinestexLoadedHandled = false;
   int _sessionToken = 0;
 
+  // Warmup handshake state, kept apart from the visible view's state above so
+  // the headless page never drives, or is driven by, a real view
+  InAppWebViewController? _warmupController;
+  String? _warmupLaunchScript;
+  Timer? _warmupTimer;
+  int _warmupRetryCount = 0;
+
   // Getters
   bool get isInitialized => _isInitialized;
   String? get currentUrl => _currentUrl;
@@ -69,6 +78,25 @@ class KinesteXWebViewController {
       _logger.info('Credentials stored during warmup');
     }
 
+    // The page verifies only with a key, company and user id. Without all three
+    // (session-token auth, or no user yet) the warmup only caches the app shell.
+    final canLaunch = [apiKey, companyName, userId].every((value) =>
+        value != null &&
+        value.isNotEmpty &&
+        !containsDisallowedCharacters(value));
+    _warmupLaunchScript = canLaunch
+        ? _launchScript(
+            apiKey: apiKey!,
+            companyName: companyName!,
+            userId: userId!,
+            url: _warmupUrl,
+          )
+        : null;
+    if (!canLaunch) {
+      _logger.info(
+          'Warmup launch handshake skipped: missing or invalid credentials');
+    }
+
     _isInitialized = true;
     _logger.info('Starting headless WebView warmup...');
 
@@ -86,6 +114,12 @@ class KinesteXWebViewController {
       ),
       onWebViewCreated: (controller) {
         _logger.info('Headless WebView created');
+        if (_warmupLaunchScript == null) return;
+        _warmupController = controller;
+        controller.addJavaScriptHandler(
+          handlerName: 'messageHandler',
+          callback: _handleWarmupMessage,
+        );
       },
       onLoadStop: (controller, url) async {
         _logger.success('Warmup page fully loaded: $url');
@@ -153,6 +187,8 @@ class KinesteXWebViewController {
       return;
     }
     if (_headlessWebView != null) {
+      _stopWarmupHandshake();
+      _warmupController = null;
       _headlessWebView!.dispose();
       _headlessWebView = null;
     }
@@ -165,27 +201,32 @@ class KinesteXWebViewController {
     );
   }
 
+  /// Decodes a messageHandler payload, which arrives as a JSON string or a map
+  WebViewMessage? _decodeMessage(List<dynamic> args) {
+    if (args.isEmpty) return null;
+
+    final dynamic data = args[0];
+    Map<String, dynamic> decodedData;
+
+    if (data is String) {
+      _logger.info('Received data (String): $data');
+      decodedData = jsonDecode(data);
+    } else if (data is Map<String, dynamic>) {
+      _logger.info('Received data (Map): $data');
+      decodedData = data;
+    } else {
+      _logger.error('Received data in unexpected format: $data');
+      return null;
+    }
+
+    return WebViewMessage.fromJson(decodedData);
+  }
+
   void _handleMessage(
       List<dynamic> args, InAppWebViewController senderController) {
     try {
-      if (args.isEmpty) return;
-
-      final dynamic data = args[0];
-      Map<String, dynamic> decodedData;
-
-      if (data is String) {
-        _logger.info('Received data (String): $data');
-        decodedData = jsonDecode(data);
-      } else if (data is Map<String, dynamic>) {
-        _logger.info('Received data (Map): $data');
-        decodedData = data;
-      } else {
-        _logger.error('Received data in unexpected format: $data');
-        return;
-      }
-
-      final WebViewMessage webViewMessage =
-          WebViewMessage.fromJson(decodedData);
+      final webViewMessage = _decodeMessage(args);
+      if (webViewMessage == null) return;
 
       // Handle special message types
       if (webViewMessage is KinestexLaunched) {
@@ -212,12 +253,65 @@ class KinesteXWebViewController {
         _onMessageReceived!(webViewMessage);
       } else {
         _logger.info(
-            'Message received but callback not set: ${decodedData['type']}');
+            'Message received but callback not set: ${webViewMessage.data['type']}');
       }
     } catch (e, stackTrace) {
       _logger.error('Error in messageHandler: $e');
       _logger.error('Stack trace: $stackTrace');
     }
+  }
+
+  /// Handles the headless warmup page's messages. They only drive the launch
+  /// handshake and are never forwarded to the host's onMessageReceived.
+  void _handleWarmupMessage(List<dynamic> args) {
+    try {
+      final message = _decodeMessage(args);
+      if (message == null) return;
+
+      if (message is KinestexLoaded) {
+        _warmupRetryCount = 0;
+        _sendWarmupLaunchData();
+      } else if (message is KinestexLaunched ||
+          message is ErrorOccurred ||
+          message is ExitKinestex) {
+        _logger.info('Warmup handshake ended: ${message.data['type']}');
+        _stopWarmupHandshake();
+      }
+    } catch (e, stackTrace) {
+      _logger.error('Error in warmup messageHandler: $e');
+      _logger.error('Stack trace: $stackTrace');
+    }
+  }
+
+  /// Posts the warmup launch data and resends it every second, up to
+  /// [_maxRetries] times, until the handshake ends
+  Future<void> _sendWarmupLaunchData() async {
+    final controller = _warmupController;
+    final script = _warmupLaunchScript;
+    if (controller == null || script == null) return;
+
+    // Armed before the script runs, so a handshake that ends (or a headless
+    // view disposed) while it runs cancels the resend instead of racing it
+    _warmupTimer?.cancel();
+    _warmupTimer = Timer(const Duration(seconds: 1), () {
+      if (_warmupRetryCount < _maxRetries) {
+        _warmupRetryCount++;
+        _logger.info(
+            'Warmup not launched within 1 second. Resending. Attempt $_warmupRetryCount.');
+        _sendWarmupLaunchData();
+      }
+    });
+
+    try {
+      await controller.evaluateJavascript(source: script);
+    } catch (e) {
+      _logger.error('Error sending warmup launch data: $e');
+    }
+  }
+
+  void _stopWarmupHandshake() {
+    _warmupTimer?.cancel();
+    _warmupTimer = null;
   }
 
   /// Load initial data into the WebView
@@ -238,21 +332,13 @@ class KinesteXWebViewController {
 
     _logger.info('Loading initial data');
 
-    String script = """
-    function sendMessage() {
-      const message = {
-        'key': ${jsonEncode(_currentApiKey)},
-        'company': ${jsonEncode(_currentCompanyName)},
-        'userId': ${jsonEncode(_currentUserId)},
-        'exercises': ${jsonEncode(_currentData?['exercises'] ?? [])},
-        'currentExercise': ${jsonEncode(_currentData?['currentExercise'] ?? '')},
-        'customWorkoutExercises': ${jsonEncode(_currentData?['customWorkoutExercises'] ?? [])},
-        ${_mapToJson(_currentData ?? {})}
-      };
-      window.postMessage(message, '$_currentUrl');
-    }
-    setTimeout(sendMessage, 100);
-  """;
+    final script = _launchScript(
+      apiKey: _currentApiKey!,
+      companyName: _currentCompanyName!,
+      userId: _currentUserId!,
+      url: _currentUrl!,
+      data: _currentData,
+    );
 
     _logger.info("Script: $script");
 
@@ -273,6 +359,31 @@ class KinesteXWebViewController {
     } catch (e) {
       _logger.error('Error sending message: $e');
     }
+  }
+
+  /// Builds the script that posts the launch data to the page 100 ms after it runs
+  String _launchScript({
+    required String apiKey,
+    required String companyName,
+    required String userId,
+    required String url,
+    Map<String, dynamic>? data,
+  }) {
+    return """
+    function sendMessage() {
+      const message = {
+        'key': ${jsonEncode(apiKey)},
+        'company': ${jsonEncode(companyName)},
+        'userId': ${jsonEncode(userId)},
+        'exercises': ${jsonEncode(data?['exercises'] ?? [])},
+        'currentExercise': ${jsonEncode(data?['currentExercise'] ?? '')},
+        'customWorkoutExercises': ${jsonEncode(data?['customWorkoutExercises'] ?? [])},
+        ${_mapToJson(data ?? {})}
+      };
+      window.postMessage(message, '$url');
+    }
+    setTimeout(sendMessage, 100);
+  """;
   }
 
   /// Update current exercise dynamically
@@ -385,6 +496,10 @@ class KinesteXWebViewController {
 
     _launchTimer?.cancel();
     _launchTimer = null;
+    _stopWarmupHandshake();
+    _warmupController = null;
+    _warmupLaunchScript = null;
+    _warmupRetryCount = 0;
 
     // Clear state
     _webViewController = null;
